@@ -1,0 +1,2 @@
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/chamath 09.04.24 17:52:59
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.04.24 17:53:02

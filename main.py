@@ -24,7 +24,8 @@ class Browser:
         chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
         self.driver = webdriver.Chrome(service=ChromeService(executable_path=CHROMEDRIVER_EXE_PATH), options=chrome_options)
         self.logger = logger(__name__)
-   
+        self.keep_open = keep_open  # Store the keep_open flag
+
     def open_page(self, url: str):
         '''This opens `url` and maximizes the window'''
         try:
@@ -95,6 +96,9 @@ class Browser:
                     ad_span = tweet.find_elements(By.XPATH, './/span[text()="Ad"]')
                     pinned_div = tweet.find_elements(By.XPATH, './/div[text()="Pinned"]')
                     if not ad_span and not pinned_div:
+                        # Scroll the tweet into view using Actions API
+                        ActionChains(self.driver).scroll_to_element(tweet).perform()
+                        sleep(0.5)  # Short wait for the scroll to complete
                         self.logger.info("Successfully scrolled to the latest non-ad and non-pinned post")
                         return tweet
                 
@@ -133,7 +137,7 @@ class Browser:
             return None
 
 if __name__ == '__main__':
-    browser = Browser(keep_open=False)
+    browser = Browser(keep_open=True)  # Set keep_open to True
     browser.go_to_following('fakerfaker680')
     browser.open_profile_in_new_tab()
     browser.driver.switch_to.window(browser.driver.window_handles[-1])  # Switch to the newly opened tab
@@ -144,3 +148,6 @@ if __name__ == '__main__':
         print(f"Latest non-ad tweet content: {tweet_text}")
     else:
         print("Failed to find the latest non-ad and non-pinned tweet")
+
+    if browser.keep_open:
+        input("Press Enter to close the browser...")  # Wait for user input before closing
