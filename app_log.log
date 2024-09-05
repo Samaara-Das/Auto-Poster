@@ -1,2 +1,270 @@
-__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/chamath 09.04.24 17:52:59
-__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.04.24 17:53:02
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/JackPosobiec 09.05.24 17:21:01
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:21:05
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831655550750232906 09.05.24 17:21:06
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:21:08
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:21:09
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @JackPosobiec! Thanks for sharing. 09.05.24 17:21:09
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:21:11
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:21:11
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/kayleighmcenany 09.05.24 17:21:14
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:21:17
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831499635917197507 09.05.24 17:21:17
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:21:18
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:21:19
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @kayleighmcenany! Thanks for sharing. 09.05.24 17:21:20
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:21:22
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:21:22
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/MattWalshBlog 09.05.24 17:21:24
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:21:28
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831145333352550754 09.05.24 17:21:28
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:21:30
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:21:31
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @vlynstam! Thanks for sharing. 09.05.24 17:21:31
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:21:33
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:21:34
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/vkhosla 09.05.24 17:21:36
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:21:40
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831481672921182347 09.05.24 17:21:40
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:21:41
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:21:42
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @vkhosla! Thanks for sharing. 09.05.24 17:21:43
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:21:45
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:21:45
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/thinkingwest 09.05.24 17:23:46
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:23:49
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831330648348344575 09.05.24 17:23:49
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:23:50
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:23:52
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @thinkingwest! Thanks for sharing. 09.05.24 17:23:52
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:23:54
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:23:54
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/keirp1 09.05.24 17:23:56
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:01
+database_manager.py save_tweet() INFO: Inserted new tweet: 1827356567320326638 09.05.24 17:24:01
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:02
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:24:03
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @MatthewBerman! Thanks for sharing. 09.05.24 17:24:03
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:24:06
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:24:06
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/KatiaEarth 09.05.24 17:24:08
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:12
+database_manager.py save_tweet() INFO: Inserted new tweet: 1830792293353242875 09.05.24 17:24:13
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:14
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:24:15
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @KatiaEarth! Thanks for sharing. 09.05.24 17:24:15
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:24:18
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:24:18
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/aheze0 09.05.24 17:24:20
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:24
+database_manager.py save_tweet() INFO: Inserted new tweet: 1830786271276581193 09.05.24 17:24:24
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:25
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:24:27
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @roozm! Thanks for sharing. 09.05.24 17:24:27
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:24:29
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:24:29
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/KidRock 09.05.24 17:24:31
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:35
+database_manager.py save_tweet() INFO: Inserted new tweet: 1829937002835214697 09.05.24 17:24:35
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:36
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:24:38
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @KidRock! Thanks for sharing. 09.05.24 17:24:38
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:24:40
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:24:40
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/MELANIATRUMP 09.05.24 17:24:43
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:46
+database_manager.py save_tweet() INFO: Inserted new tweet: 1828499518645793040 09.05.24 17:24:46
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:47
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:24:49
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @MELANIATRUMP! Thanks for sharing. 09.05.24 17:24:49
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:24:51
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:24:51
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/EvaVlaar 09.05.24 17:24:54
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:24:58
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831074126330548404 09.05.24 17:24:58
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:24:59
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:00
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @EvaVlaar! Thanks for sharing. 09.05.24 17:25:01
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:25:03
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:25:03
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/TulsiGabbard 09.05.24 17:25:05
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:25:09
+database_manager.py save_tweet() INFO: Inserted new tweet: 1830942962475507756 09.05.24 17:25:09
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:25:11
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:12
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @TulsiGabbard! Thanks for sharing. 09.05.24 17:25:12
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:25:14
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:25:15
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/tedcruz 09.05.24 17:25:17
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:25:20
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831656019765731455 09.05.24 17:25:21
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:25:22
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:23
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @tedcruz! Thanks for sharing. 09.05.24 17:25:23
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:25:26
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:25:26
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/RandPaul 09.05.24 17:25:28
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:25:32
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831029643362668550 09.05.24 17:25:32
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:25:33
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:34
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @RandPaul! Thanks for sharing. 09.05.24 17:25:35
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:25:37
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:25:37
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/SpaceX 09.05.24 17:25:39
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:25:43
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831446939675836627 09.05.24 17:25:43
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:25:44
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:46
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @SpaceX! Thanks for sharing. 09.05.24 17:25:46
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:25:48
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:25:48
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/lexfridman 09.05.24 17:25:51
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:25:55
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831535647279943914 09.05.24 17:25:55
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:25:56
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:25:57
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @elonmusk! Thanks for sharing. 09.05.24 17:25:58
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:00
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:00
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/TheBabylonBee 09.05.24 17:26:02
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:26:05
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831497526240776652 09.05.24 17:26:06
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:26:07
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:26:08
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @TheBabylonBee! Thanks for sharing. 09.05.24 17:26:08
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:11
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:11
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/DonaldJTrumpJr 09.05.24 17:26:13
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:26:17
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831383753308180910 09.05.24 17:26:17
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:26:18
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:26:20
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @DonaldJTrumpJr! Thanks for sharing. 09.05.24 17:26:20
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:22
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:22
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/jordanbpeterson 09.05.24 17:26:25
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:26:29
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831568107279622643 09.05.24 17:26:29
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:26:30
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:26:31
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @jordanbpeterson! Thanks for sharing. 09.05.24 17:26:32
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:34
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:34
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/benshapiro 09.05.24 17:26:36
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:26:41
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831498314937950594 09.05.24 17:26:41
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:26:42
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:26:43
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @Yair_Rosenberg! Thanks for sharing. 09.05.24 17:26:44
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:46
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:46
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/RealCandaceO 09.05.24 17:26:48
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:26:52
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831526076457058698 09.05.24 17:26:53
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:26:54
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:26:55
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @RealCandaceO! Thanks for sharing. 09.05.24 17:26:55
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:26:58
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:26:58
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/RobertKennedyJr 09.05.24 17:27:00
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:27:04
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831511198539657236 09.05.24 17:27:04
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:27:05
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:27:07
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @RobertKennedyJr! Thanks for sharing. 09.05.24 17:27:07
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:27:09
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:27:09
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/TuckerCarlson 09.05.24 17:27:12
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:27:15
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831377014269346137 09.05.24 17:27:16
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:27:17
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:27:18
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @TuckerCarlson! Thanks for sharing. 09.05.24 17:27:19
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:27:21
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:27:21
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/realDonaldTrump 09.05.24 17:27:23
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:27:27
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831010861248585738 09.05.24 17:27:27
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:27:28
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:27:29
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @lexfridman! Thanks for sharing. 09.05.24 17:27:30
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:27:32
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:27:32
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/MrBeast 09.05.24 17:27:35
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:27:38
+database_manager.py save_tweet() INFO: Inserted new tweet: 1816299504674464113 09.05.24 17:27:38
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:27:39
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:27:40
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @MrBeast! Thanks for sharing. 09.05.24 17:27:41
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:27:43
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:27:43
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/elonmusk 09.05.24 17:27:46
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:27:50
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831566794114363749 09.05.24 17:27:50
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:27:51
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:27:52
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @MarioNawfal! Thanks for sharing. 09.05.24 17:27:53
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:27:55
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:27:55
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/narendramodi 09.05.24 17:27:57
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:28:01
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831657820640682262 09.05.24 17:28:01
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:28:02
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:28:04
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @narendramodi! Thanks for sharing. 09.05.24 17:28:04
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:28:06
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:28:06
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/eOpinionPolls 09.05.24 17:28:09
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:28:13
+database_manager.py save_tweet() INFO: Inserted new tweet: 1831593028806422595 09.05.24 17:28:13
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:28:14
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:28:15
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @AAPHaryana! Thanks for sharing. 09.05.24 17:28:16
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:28:18
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:28:18
+__main__.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/RockstarGames 09.05.24 17:28:20
+__main__.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.05.24 17:28:24
+database_manager.py save_tweet() INFO: Inserted new tweet: 1830969017911160958 09.05.24 17:28:24
+__main__.py like_tweet() INFO: Successfully liked the tweet 09.05.24 17:28:25
+__main__.py click_reply_button() INFO: Successfully clicked the reply button 09.05.24 17:28:26
+__main__.py type_reply() INFO: Successfully typed reply: Great tweet, @RockstarGames! Thanks for sharing. 09.05.24 17:28:27
+__main__.py send_reply() INFO: Successfully clicked the reply send button 09.05.24 17:28:29
+__main__.py close_current_tab() INFO: Closed the current tab and switched back to the previous one 09.05.24 17:28:29
+__main__.py open_profile_in_new_tab() INFO: No more profiles to process 09.05.24 17:28:34
+__main__.py delete_all_replies() INFO: Navigated to fakerfaker680's profile 09.05.24 17:28:34
+__main__.py delete_all_replies() INFO: Clicked on the Replies tab 09.05.24 17:28:34
+__main__.py delete_all_replies() INFO: Deleted reply 1 09.05.24 17:28:37
+__main__.py delete_all_replies() INFO: Deleted reply 2 09.05.24 17:28:39
+__main__.py delete_all_replies() INFO: Deleted reply 3 09.05.24 17:28:42
+__main__.py delete_all_replies() INFO: Deleted reply 4 09.05.24 17:28:44
+__main__.py delete_all_replies() INFO: Deleted reply 5 09.05.24 17:28:47
+__main__.py delete_all_replies() INFO: Deleted reply 6 09.05.24 17:28:50
+__main__.py delete_all_replies() INFO: Deleted reply 7 09.05.24 17:28:53
+__main__.py delete_all_replies() INFO: Deleted reply 8 09.05.24 17:28:55
+__main__.py delete_all_replies() INFO: Deleted reply 9 09.05.24 17:28:58
+__main__.py delete_all_replies() INFO: Deleted reply 10 09.05.24 17:29:01
+__main__.py delete_all_replies() INFO: Deleted reply 11 09.05.24 17:29:04
+__main__.py delete_all_replies() INFO: Deleted reply 12 09.05.24 17:29:06
+__main__.py delete_all_replies() INFO: Deleted reply 13 09.05.24 17:29:09
+__main__.py delete_all_replies() INFO: Deleted reply 14 09.05.24 17:29:12
+__main__.py delete_all_replies() INFO: Deleted reply 15 09.05.24 17:29:14
+__main__.py delete_all_replies() INFO: Deleted reply 16 09.05.24 17:29:17
+__main__.py delete_all_replies() INFO: Deleted reply 17 09.05.24 17:29:19
+__main__.py delete_all_replies() INFO: Deleted reply 18 09.05.24 17:29:22
+__main__.py delete_all_replies() INFO: Deleted reply 19 09.05.24 17:29:25
+__main__.py delete_all_replies() INFO: Deleted reply 20 09.05.24 17:29:28
+__main__.py delete_all_replies() INFO: Deleted reply 21 09.05.24 17:29:31
+__main__.py delete_all_replies() INFO: Deleted reply 22 09.05.24 17:29:34
+__main__.py delete_all_replies() INFO: Deleted reply 23 09.05.24 17:29:37
+__main__.py delete_all_replies() INFO: Deleted reply 24 09.05.24 17:29:40
+__main__.py delete_all_replies() INFO: Deleted reply 25 09.05.24 17:29:43
+__main__.py delete_all_replies() INFO: Deleted reply 26 09.05.24 17:29:45
+__main__.py delete_all_replies() INFO: Deleted reply 27 09.05.24 17:29:48
+__main__.py delete_all_replies() INFO: Deleted reply 28 09.05.24 17:29:51
+__main__.py delete_all_replies() INFO: Deleted reply 29 09.05.24 17:29:54
+__main__.py delete_all_replies() INFO: Deleted reply 30 09.05.24 17:29:57
+__main__.py delete_all_replies() INFO: Deleted reply 31 09.05.24 17:29:59
+__main__.py delete_all_replies() INFO: Deleted reply 32 09.05.24 17:30:02
+__main__.py delete_all_replies() INFO: Deleted reply 33 09.05.24 17:30:05
+__main__.py delete_all_replies() INFO: Deleted reply 34 09.05.24 17:30:07
+__main__.py delete_all_replies() INFO: Finished deleting replies. Total deleted: 34 09.05.24 17:30:19
