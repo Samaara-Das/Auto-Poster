@@ -34,14 +34,7 @@ class Browser:
         self.driver = webdriver.Chrome(service=ChromeService(executable_path=CHROMEDRIVER_EXE_PATH), options=chrome_options)
         self.logger = logger(__name__)
         self.keep_open = keep_open  # Store the keep_open flag
-        self.processed_profiles = self.load_processed_profiles()
-
-    def load_processed_profiles(self):
-        try:
-            with open('processed_profiles.json', 'r') as f:
-                return set(json.load(f))
-        except FileNotFoundError:
-            return set()
+        self.processed_profiles = set() # Always return an empty set when the program starts
 
     def save_processed_profiles(self):
         with open('processed_profiles.json', 'w') as f:
@@ -200,27 +193,26 @@ class Browser:
 
     def like_tweet(self, tweet_element):
         """
-        Clicks the like button of the given tweet if it hasn't been liked before.
-        Returns True if the tweet was successfully liked, False otherwise.
+        Checks if the given tweet is liked. If not, it likes the tweet.
+        Returns True if the tweet is (or was successfully) liked, False otherwise.
         """
         try:
-            # Find the like button within the tweet element
-            like_button = tweet_element.find_element(By.XPATH, './/button[@data-testid="like"]')
+            # Find the like/unlike button within the tweet element
+            like_button = tweet_element.find_element(By.XPATH, './/button[@data-testid="like" or @data-testid="unlike"]')
             
             # Check if the tweet is already liked
-            aria_label = like_button.get_attribute('aria-label')
-            if 'Liked' in aria_label:
+            if like_button.get_attribute('data-testid') == 'unlike':
                 self.logger.info("Tweet is already liked")
-                return False
+                return True
             
-            # Click the like button
+            # If not liked, click the like button
             like_button.click()
             sleep(1)  # Wait for the like action to complete
             
             self.logger.info("Successfully liked the tweet")
             return True
         except NoSuchElementException:
-            self.logger.error("Could not find the like button")
+            self.logger.error("Could not find the like/unlike button")
             return False
         except Exception as e:
             self.logger.exception(f"Failed to like the tweet. Error: {str(e)}")
@@ -296,12 +288,16 @@ class Browser:
             return False
 
 if __name__ == '__main__':
+    # Clear the processed_profiles.json file before starting so that there's no record of previously processed profiles and the program starts with a clean slate.
+    with open('processed_profiles.json', 'w') as f:
+        json.dump([], f)
+    
     db_manager = DatabaseManager()
     browser = Browser(keep_open=True)
-    
+
     username = 'fakerfaker680'
     browser.go_to_following(username)
-    
+
     max_retries = 3
     retry_delay = 5  # seconds
     profile_delay = 2  # seconds between processing profiles
@@ -364,9 +360,6 @@ if __name__ == '__main__':
                 pass
             sleep(retry_delay)
             continue
-
-    delete_all_replies(browser.driver, browser.logger, username)
-    delete_all_likes(browser.driver, browser.logger, username)
 
     if browser.keep_open:
         input("Press Enter to close the browser...")  # Wait for user input before closing
