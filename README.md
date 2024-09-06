@@ -1,4 +1,4 @@
-# Flash  
+# Auto Poster  
 
 The goal of this app is to drive more views to our x profile/account.  
 
