@@ -13,7 +13,7 @@ class DatabaseManager:
         pwd = getenv('MONGO_PWD')
         connection_string = f"mongodb+srv://sammy:{pwd}@cluster1.565lfln.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1"
         self.client = MongoClient(connection_string)
-        self.db = self.client['flash']
+        self.db = self.client['auto_poster']
         self.collection = self.db['tweets']
         self.logger = logger('database_manager')
 
