@@ -23,7 +23,8 @@ load_dotenv()
 CHROMEDRIVER_EXE_PATH = getenv('CHROMEDRIVER_EXE_PATH')
 CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
 
-class Browser:
+# Low level class for controlling actions on X
+class XController:
 
     def __init__(self, keep_open: bool) -> None:
         clear_log_file()
@@ -32,6 +33,7 @@ class Browser:
         chrome_options.add_argument('--profile-directory=Profile 12') # This profile is for the policy vote account
         chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
         self.driver = webdriver.Chrome(service=ChromeService(executable_path=CHROMEDRIVER_EXE_PATH), options=chrome_options)
+        self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
         self.keep_open = keep_open  # Store the keep_open flag
         self.processed_profiles = set() # Always return an empty set when the program starts
@@ -89,6 +91,7 @@ class Browser:
                 href = link.get_attribute('href')
                 if not self.is_profile_processed(href):
                     self.driver.execute_script(f"window.open('{href}', '_blank');")
+                    self.window_handles = self.driver.window_handles
                     self.logger.info(f'Opened profile in new tab: {href}')
                     self.mark_profile_as_processed(href)
                     return True
@@ -105,6 +108,9 @@ class Browser:
 
             return self.open_profile_in_new_tab()  # Recursively call after scrolling
 
+        except TimeoutException:
+            self.logger.warning("Timeline not found. The page might not have loaded properly.")
+            return False
         except Exception as e:
             self.logger.exception(f'Failed to open profile in new tab. Error: {str(e)}')
             return False
@@ -287,80 +293,90 @@ class Browser:
             self.logger.exception(f"Failed to close tab. Error: {str(e)}")
             return False
 
-if __name__ == '__main__':
-    # Clear the processed_profiles.json file before starting so that there's no record of previously processed profiles and the program starts with a clean slate.
-    with open('processed_profiles.json', 'w') as f:
-        json.dump([], f)
-    
-    db_manager = DatabaseManager()
-    browser = Browser(keep_open=True)
+# High level class for controlling X
+class XBot:
+    def __init__(self):
+        self.db_manager = DatabaseManager()
+        self.browser = XController(keep_open=True)
+        self.max_retries = 3
+        self.retry_delay = 5
+        self.profile_delay = 2
 
-    username = getenv('USERNAME')
-    browser.go_to_following(username)
+    def initialize_environment(self):
+        # Clear processed profiles and set up the browser
+        with open('processed_profiles.json', 'w') as f:
+            json.dump([], f)
+        username = getenv('USERNAME')
+        self.browser.go_to_following(username)
 
-    max_retries = 3
-    retry_delay = 5  # seconds
-    profile_delay = 2  # seconds between processing profiles
+    def process_profile(self):
+        if not self.browser.open_profile_in_new_tab():
+            return False  # No more profiles to process
+        self.browser.driver.switch_to.window(self.browser.window_handles[-1])
+        return True
 
-    while True:
-        try:
-            if not browser.open_profile_in_new_tab():
-                break  # No more profiles to process
+    def interact_with_tweet(self):
+        tweet_element = self.browser.scroll_to_latest_post()
+        if not tweet_element:
+            print("Failed to find the latest non-ad and non-pinned tweet")
+            return
 
-            browser.driver.switch_to.window(browser.driver.window_handles[-1])
-            
-            tweet_element = browser.scroll_to_latest_post()
-            if tweet_element:
-                tweet_link = browser.get_tweet_link(tweet_element)
-                tweet_author = browser.get_tweet_author(tweet_element)
-                if tweet_link and tweet_author:
-                    db_manager.save_tweet(tweet_link, tweet_author)
-                    print(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
-                    
-                    # Like the tweet
-                    for attempt in range(max_retries):
-                        if browser.like_tweet(tweet_element):
-                            print(f"Liked the tweet by {tweet_author} successfully")
-                            
-                            # Send a reply
-                            if browser.click_reply_button(tweet_element):
-                                reply_text = f"Great tweet, @{tweet_author}! Thanks for sharing."
-                                if browser.type_reply(reply_text) and browser.send_reply():
-                                    print(f"Replied to the tweet by {tweet_author} successfully")
-                                else:
-                                    print(f"Failed to send reply to {tweet_author}")
-                            else:
-                                print(f"Failed to open reply dialog for {tweet_author}")
-                            
-                            break
-                        else:
-                            if attempt < max_retries - 1:
-                                print(f"Failed to like tweet, retrying in {retry_delay} seconds...")
-                                sleep(retry_delay)
-                            else:
-                                print(f"Failed to like the tweet by {tweet_author} after {max_retries} attempts")
-                else:
-                    print(f"Failed to get tweet link for {tweet_author}")
+        tweet_link = self.browser.get_tweet_link(tweet_element)
+        tweet_author = self.browser.get_tweet_author(tweet_element)
+        if not (tweet_link and tweet_author):
+            print(f"Failed to get tweet link for {tweet_author}")
+            return
+
+        self.db_manager.save_tweet(tweet_link, tweet_author)
+        print(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
+
+        self.like_and_reply(tweet_element, tweet_author)
+
+    def like_and_reply(self, tweet_element, tweet_author):
+        for attempt in range(self.max_retries):
+            if self.browser.like_tweet(tweet_element):
+                print(f"Liked the tweet by {tweet_author} successfully")
+                self.send_reply(tweet_element, tweet_author)
+                break
+            elif attempt < self.max_retries - 1:
+                print(f"Failed to like tweet, retrying in {self.retry_delay} seconds...")
+                sleep(self.retry_delay)
             else:
-                print("Failed to find the latest non-ad and non-pinned tweet")
-            
-            # Close the current tab and switch back to the following list
-            browser.close_current_tab()
-            
-            # Add a delay to avoid rate limiting
-            sleep(profile_delay)
+                print(f"Failed to like the tweet by {tweet_author} after {self.max_retries} attempts")
 
-        except Exception as e:
-            print(f"An error occurred while processing a profile: {str(e)}")
-            browser.logger.exception("Error in main loop")
-            # Attempt to close the current tab and continue with the next profile
+    def send_reply(self, tweet_element, tweet_author):
+        if self.browser.click_reply_button(tweet_element):
+            reply_text = f"Great tweet, @{tweet_author}! Thanks for sharing."
+            if self.browser.type_reply(reply_text) and self.browser.send_reply():
+                print(f"Replied to the tweet by {tweet_author} successfully")
+            else:
+                print(f"Failed to send reply to {tweet_author}")
+        else:
+            print(f"Failed to open reply dialog for {tweet_author}")
+
+    def cleanup(self):
+        self.browser.close_current_tab()
+        sleep(self.profile_delay)
+
+    def run(self):
+        self.initialize_environment()
+
+        while True:
             try:
-                browser.close_current_tab()
-            except:
-                pass
-            sleep(retry_delay)
-            continue
+                if not self.process_profile():
+                    break
+                self.interact_with_tweet()
+                self.cleanup()
+            except Exception as e:
+                print(f"An error occurred while processing a profile: {str(e)}")
+                self.browser.logger.exception("Error in main loop")
+                self.cleanup()
+                sleep(self.retry_delay)
 
-    if browser.keep_open:
-        input("Press Enter to close the browser...")  # Wait for user input before closing
+        if self.browser.keep_open:
+            input("Press Enter to close the browser...")
+
+if __name__ == '__main__':
+    bot = XBot()
+    bot.run()
 
