@@ -29,7 +29,7 @@ class Browser:
         clear_log_file()
         chrome_options = Options() 
         chrome_options.add_experimental_option("detach", keep_open)
-        chrome_options.add_argument('--profile-directory=Profile 11') # Use a fake profile so that X won't flag a real profile (mine or anyone else's)
+        chrome_options.add_argument('--profile-directory=Profile 12') # This profile is for the policy vote account
         chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
         self.driver = webdriver.Chrome(service=ChromeService(executable_path=CHROMEDRIVER_EXE_PATH), options=chrome_options)
         self.logger = logger(__name__)
@@ -295,7 +295,7 @@ if __name__ == '__main__':
     db_manager = DatabaseManager()
     browser = Browser(keep_open=True)
 
-    username = 'fakerfaker680'
+    username = getenv('USERNAME')
     browser.go_to_following(username)
 
     max_retries = 3

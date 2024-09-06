@@ -9,7 +9,7 @@ from time import sleep
 
 def delete_all_replies(driver, logger, username: str):
     """
-    Deletes all replies made by the user.
+    Deletes all replies made by the user. Sometimes, this doesn't work.
     
     :param driver: The Selenium WebDriver instance
     :param logger: The logger instance
