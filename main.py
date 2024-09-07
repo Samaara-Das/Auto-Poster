@@ -31,8 +31,27 @@ class XController:
         chrome_options = Options() 
         chrome_options.add_experimental_option("detach", keep_open)
         chrome_options.add_argument('--profile-directory=Profile 12') # This profile is for the policy vote account
-        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
-        self.driver = webdriver.Chrome(service=ChromeService(executable_path=CHROMEDRIVER_EXE_PATH), options=chrome_options)
+        chrome_options.add_argument("--app=https://x.com/home")
+        
+        # Use a unique user data directory for this project
+        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}/AutoPoster")
+        
+        # Specify a different port for Chrome DevTools
+        chrome_options.add_argument("--remote-debugging-port=9223")
+        
+        # Disable the use of a single Chrome instance
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
+        # Keep the headless argument if needed
+        # chrome_options.add_argument('--headless')
+
+        # Use a service object to set additional options
+        service = ChromeService(executable_path=CHROMEDRIVER_EXE_PATH)
+        service.creation_flags = 0x08000000  # Detached process flag
+
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        self.driver.maximize_window()
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
         self.keep_open = keep_open  # Store the keep_open flag
