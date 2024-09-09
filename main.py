@@ -26,35 +26,23 @@ CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
 # Low level class for controlling actions on X
 class XController:
 
-    def __init__(self, keep_open: bool) -> None:
+    def __init__(self) -> None:
         clear_log_file()
         chrome_options = Options() 
-        chrome_options.add_experimental_option("detach", keep_open)
-        chrome_options.add_argument('--profile-directory=Profile 12') # This profile is for the policy vote account
-        chrome_options.add_argument("--app=https://x.com/home")
-        
-        # Use a unique user data directory for this project
-        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}/AutoPoster")
-        
-        # Specify a different port for Chrome DevTools
+        chrome_options.add_argument('--profile-directory=Profile 11')
+        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
+       
+        # Add a unique remote debugging port
         chrome_options.add_argument("--remote-debugging-port=9223")
-        
-        # Disable the use of a single Chrome instance
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        
-        # Keep the headless argument if needed
-        # chrome_options.add_argument('--headless')
 
         # Use a service object to set additional options
         service = ChromeService(executable_path=CHROMEDRIVER_EXE_PATH)
-        service.creation_flags = 0x08000000  # Detached process flag
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        self.driver.get("https://x.com/home")
         self.driver.maximize_window()
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
-        self.keep_open = keep_open  # Store the keep_open flag
         self.processed_profiles = set() # Always return an empty set when the program starts
 
     def save_processed_profiles(self):
@@ -316,7 +304,7 @@ class XController:
 class XBot:
     def __init__(self):
         self.db_manager = DatabaseManager()
-        self.browser = XController(keep_open=True)
+        self.browser = XController()
         self.max_retries = 3
         self.retry_delay = 5
         self.profile_delay = 2
@@ -325,7 +313,7 @@ class XBot:
         # Clear processed profiles and set up the browser
         with open('processed_profiles.json', 'w') as f:
             json.dump([], f)
-        username = getenv('USERNAME')
+        username = getenv('FAKE_USERNAME')
         self.browser.go_to_following(username)
 
     def process_profile(self):
@@ -392,8 +380,9 @@ class XBot:
                 self.cleanup()
                 sleep(self.retry_delay)
 
-        if self.browser.keep_open:
-            input("Press Enter to close the browser...")
+        self.browser.driver.stop_client()
+        self.browser.driver.close()
+        self.browser.driver.quit()
 
 if __name__ == '__main__':
     bot = XBot()
