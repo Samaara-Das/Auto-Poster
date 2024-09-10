@@ -28,7 +28,7 @@ class XController:
     def __init__(self) -> None:
         clear_log_file()
         chrome_options = Options() 
-        chrome_options.add_experimental_option("detach", keep_open)
+        chrome_options.add_experimental_option("detach")
         chrome_options.add_argument('--profile-directory=Profile 11') # This profile is for the fake account
         
         # Use a unique user data directory for this project
