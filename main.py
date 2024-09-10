@@ -13,7 +13,6 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
 from os import getenv
 from dotenv import load_dotenv
-from delete_reactions import delete_all_replies, delete_all_likes
 import json
 
 # Load environment variables
@@ -29,12 +28,19 @@ class XController:
     def __init__(self) -> None:
         clear_log_file()
         chrome_options = Options() 
-        chrome_options.add_argument('--profile-directory=Profile 11')
-        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}")
-       
-        # Add a unique remote debugging port
+        chrome_options.add_experimental_option("detach", keep_open)
+        chrome_options.add_argument('--profile-directory=Profile 11') # This profile is for the fake account
+        
+        # Use a unique user data directory for this project
+        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}/AutoPoster")
+        
+        # Specify a different port for Chrome DevTools
         chrome_options.add_argument("--remote-debugging-port=9223")
-
+        
+        # Disable the use of a single Chrome instance
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
         # Use a service object to set additional options
         service = ChromeService(executable_path=CHROMEDRIVER_EXE_PATH)
 
@@ -70,7 +76,33 @@ class XController:
         except WebDriverException:
             self.logger.exception(f'Cannot open this url: {url}. Error: ')
             return False 
-        
+
+    def sign_in(self):
+        '''This method checks if the user is logged in to X, if not, it will sign in'''
+        self.driver.get('https://x.com/login') # go to X
+        # if the timeline is displayed, that means that X opened and the user is logged in
+        try:
+            home_timeline = WebDriverWait(self.driver, 6).until(
+                EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Home timeline"]'))
+            )
+            if home_timeline.is_displayed():
+                self.logger.info('User is already logged in to X')
+        except TimeoutException:
+            self.logger.info('User is not logged in to X')
+            # Find and enter username
+            username_input = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//input[@autocomplete="username"]')))
+            username_input.send_keys(getenv('FAKE_USERNAME'))
+            username_input.send_keys(Keys.ENTER)
+            
+            # Wait for password input to be present
+            password_input = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//input[@name="password"]')))
+            password_input.send_keys(getenv('FAKE_PWD'))
+            password_input.send_keys(Keys.ENTER)
+
+            # Wait for the home timeline to be present, indicating successful login
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Home timeline"]')))
+            self.logger.info('Successfully logged in to X')
+
     def go_to_following(self, username: str):
         self.driver.get(f'https://x.com/{username}/following')
 
@@ -310,10 +342,11 @@ class XBot:
         self.profile_delay = 2
 
     def initialize_environment(self):
-        # Clear processed profiles and set up the browser
+        # Clear processed profiles, sign in to X if logged out, and go to following
         with open('processed_profiles.json', 'w') as f:
             json.dump([], f)
         username = getenv('FAKE_USERNAME')
+        self.browser.sign_in()
         self.browser.go_to_following(username)
 
     def process_profile(self):
