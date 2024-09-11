@@ -1,0 +1,4 @@
+x_controller.py sign_in() INFO: User is not logged in to X 09.11.24 12:04:00
+x_controller.py _login() INFO: Successfully logged in to X 09.11.24 12:04:04
+x_controller.py open_profile_in_new_tab() INFO: Opened profile in new tab: https://x.com/Lynnebf_2846 09.11.24 12:04:06
+x_controller.py scroll_to_latest_post() INFO: Successfully scrolled to the latest non-ad and non-pinned post 09.11.24 12:04:11

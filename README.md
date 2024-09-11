@@ -10,4 +10,7 @@ Outcome/Result:
 1. This way, when I reply to their posts it will lead to other visitors to their accounts that are seeing those original posts to also view my reply (which is my post). 
 2. This leads to increasing my profile views- which was the objective as mentioned in the Goal.
 
+## Notes
+The X account you use must not have any verification, otherwise the bot will not work.
+
 ## How does this app work
