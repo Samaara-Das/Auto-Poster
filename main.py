@@ -3,6 +3,7 @@ from x_bot import XBot
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 from tkinter import simpledialog
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -11,7 +12,7 @@ class TwitterBotGUI:
     def __init__(self, master):
         self.master = master
         master.title("Auto Poster")
-        master.geometry("700x600")  # Increased width to accommodate the new list
+        master.geometry("700x600")
 
         # Create a frame for the main content
         main_frame = ttk.Frame(master)
@@ -27,6 +28,11 @@ class TwitterBotGUI:
         ttk.Label(left_frame, text="X Username:").pack(pady=10)
         self.username_entry = ttk.Entry(left_frame)
         self.username_entry.pack()
+
+        # Email input
+        ttk.Label(left_frame, text="Email:").pack(pady=10)
+        self.email_entry = ttk.Entry(left_frame)
+        self.email_entry.pack()
 
         # Password input
         password_frame = ttk.Frame(left_frame)
@@ -48,6 +54,10 @@ class TwitterBotGUI:
         # Start button
         ttk.Button(left_frame, text="Start Bot", command=self.start_bot).pack(pady=20)
 
+        # Status label
+        self.status_label = ttk.Label(left_frame, text="")
+        self.status_label.pack(pady=10)
+
         # People to reply to list
         ttk.Label(right_frame, text="People to reply to").pack(pady=10)
         self.reply_list = tk.Listbox(right_frame, width=30, height=20)
@@ -68,17 +78,27 @@ class TwitterBotGUI:
     def start_bot(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
+        email = self.email_entry.get()
         messages = self.message_box.get("1.0", tk.END).strip()
 
-        if not username or not password:
-            messagebox.showerror("Error", "Please enter both username and password.")
+        if not username or not password or not email:
+            messagebox.showerror("Error", "Please enter your X username, password and email.")
             return
 
         if not messages:
             messagebox.showerror("Error", "Please enter content in the text box.")
             return
-        bot = XBot(username, password, messages)
-        bot.run()
+
+        # Create XBot instance with GUI callback
+        bot = XBot(username, password, email, messages, self.update_gui)
+        
+        # Start the bot in a separate thread
+        threading.Thread(target=bot.run, daemon=True).start()
+
+    def update_gui(self, message):
+        self.status_label.config(text=message)
+        if "Verification required" in message:
+            messagebox.showwarning("Verification Required", message)
 
     def add_person(self):
         person = simpledialog.askstring("Add Person", "Enter the person's username:")

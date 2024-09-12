@@ -19,6 +19,10 @@ load_dotenv()
 CHROMEDRIVER_EXE_PATH = getenv('CHROMEDRIVER_EXE_PATH')
 CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
 
+class VerificationRequiredException(Exception):
+    """Custom exception for when verification is required during login."""
+    pass
+
 class XController:
 
     def __init__(self) -> None:
@@ -73,7 +77,7 @@ class XController:
             self.logger.exception(f'Cannot open this url: {url}. Error: ')
             return False 
 
-    def sign_in(self, username, password):
+    def sign_in(self, username, password, email):
         '''This method checks if the user is logged in to X, if not, it will sign in to the specified account'''
         self.driver.get('https://x.com/login') # go to X
         try:
@@ -86,10 +90,10 @@ class XController:
                     self.logger.info('User is already logged in to X')
                 else: # handle the case where a different account is logged in
                     self._logout()
-                    self._login(username, password)
+                    self._login(username, password, email)
         except TimeoutException: # if the timeline is not displayed, that means that a user is not logged in
             self.logger.info('User is not logged in to X')
-            self._login(username, password)
+            self._login(username, password, email)
 
     def _logout(self):
         '''Helper method to log out the current user'''
@@ -106,24 +110,50 @@ class XController:
         login_button = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))
         login_button.click()
 
-    def _login(self, username, password):
+    def _login(self, username, password, email):
         '''Helper method to perform the actual login process'''
         try:
             # Find and enter username
             username_input = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//input[@autocomplete="username"]')))
             username_input.send_keys(username)
             username_input.send_keys(Keys.ENTER)
+            self.logger.info('Successfully entered username')
+
+            # If a phone number or email is required because suspicious activity is detected, enter the email
+            try:
+                WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.XPATH, '//span[contains(text(), "Enter your phone number or email address")]')))
+                email_input = self.driver.find_element(By.XPATH, '//input[@data-testid="ocfEnterTextTextInput"]')
+                email_input.send_keys(email)
+                email_input.send_keys(Keys.ENTER)
+                self.logger.info('Successfully entered email')
+            except TimeoutException: # if a timeout exception is raised, that means that the popup asking for email or phone number didn't display
+                self.logger.info('No popup asking for email or phone number')
+                pass
             
             # Wait for password input to be present
             password_input = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//input[@name="password"]')))
             password_input.send_keys(password)
             password_input.send_keys(Keys.ENTER)
+            self.logger.info('Successfully entered password')
+
+            # Check for verification popup
+            try:
+                WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, '//span[contains(text(), "verification")]')))
+                raise VerificationRequiredException("Verification required for X account. All two-factor authentication methods for X account should be disabled.")
+            except TimeoutException:
+                # Verification popup not found, continue with login process
+                self.logger.info('No verification popup')
+                pass
 
             # Wait for the home timeline to be present, indicating successful login
-            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Home timeline"]')))
+            WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Home timeline"]')))
             self.logger.info('Successfully logged in to X')
+        except VerificationRequiredException as ve:
+            self.logger.error(str(ve))
+            raise  # Re-raise the exception to be caught by the calling method
         except Exception as e:
             self.logger.exception(f'Failed to log in to X. Error: {str(e)}')
+            raise  # Re-raise the exception to be caught by the calling method
 
     def go_to_following(self, username: str):
         self.driver.get(f'https://x.com/{username}/following')

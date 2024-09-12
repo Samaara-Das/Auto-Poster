@@ -1,10 +1,10 @@
 import json
 from database_manager import DatabaseManager
-from x_controller import XController
+from x_controller import XController, VerificationRequiredException
 from time import sleep
 
 class XBot:
-    def __init__(self, username, password, content):
+    def __init__(self, username, password, email, content, gui_callback):
         self.db_manager = DatabaseManager()
         self.browser = XController()
         self.max_retries = 3
@@ -12,14 +12,26 @@ class XBot:
         self.profile_delay = 2
         self.username = username
         self.password = password
+        self.email = email
         self.content = content
+        self.gui_callback = gui_callback  # New: callback function for GUI updates
 
     def initialize_environment(self):
         # Clear processed profiles, sign in to X if logged out, and go to following
         with open('processed_profiles.json', 'w') as f:
             json.dump([], f)
-        self.browser.sign_in(self.username, self.password)
-        self.browser.go_to_following(self.username)
+        try:
+            self.browser.sign_in(self.username, self.password, self.email)
+            self.browser.go_to_following(self.username)
+        except VerificationRequiredException as ve:
+            error_message = str(ve)
+            self.gui_callback(error_message)  # Use the callback to update GUI
+            return False
+        except Exception as e:
+            error_message = f"An error occurred during initialization: {str(e)}"
+            self.gui_callback(error_message)  # Use the callback to update GUI
+            return False
+        return True
 
     def process_profile(self):
         if not self.browser.open_profile_in_new_tab():
@@ -70,7 +82,8 @@ class XBot:
         sleep(self.profile_delay)
 
     def run(self):
-        self.initialize_environment()
+        if not self.initialize_environment():
+            return  # Exit the method if initialization fails
 
         while True:
             try:
@@ -79,7 +92,8 @@ class XBot:
                 self.interact_with_tweet()
                 self.cleanup()
             except Exception as e:
-                print(f"An error occurred while processing a profile: {str(e)}")
+                error_message = f"An error occurred while processing a profile: {str(e)}"
+                self.gui_callback(error_message)  # Use the callback to update GUI
                 self.browser.logger.exception("Error in main loop")
                 self.cleanup()
                 sleep(self.retry_delay)
@@ -87,3 +101,4 @@ class XBot:
         self.browser.driver.stop_client()
         self.browser.driver.close()
         self.browser.driver.quit()
+        self.gui_callback("Bot finished running.")  # Notify GUI that the bot has finished
