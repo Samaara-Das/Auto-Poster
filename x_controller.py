@@ -50,6 +50,7 @@ class XController:
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
         self.processed_profiles = set() # Always return an empty set when the program starts
+        following = []
 
     def save_processed_profiles(self):
         with open('processed_profiles.json', 'w') as f:
@@ -156,56 +157,60 @@ class XController:
             raise  # Re-raise the exception to be caught by the calling method
 
     def go_to_following(self, username: str):
+        '''This method goes to the following page of the specified user'''
         self.driver.get(f'https://x.com/{username}/following')
 
-    def open_profile_in_new_tab(self):
+    def get_following_usernames(self):
         """
-        This method finds the next unprocessed profile link in the "Following" timeline,
-        extracts its URL, and opens it in a new tab. It returns True if successful,
-        False if no more profiles to process, and logs the outcome.
+        Scrapes profile links and names from the following page and adds them to the list of profile URLs 'following'.
         """
         try:
+            if self.following:  # if the list of following usernames is already filled with links, return True
+                return True 
+
             # Wait for the page to load
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.TAG_NAME, "body"))
-            )
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
             # Find the timeline element
-            timeline_div = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]'))
-            )
+            timeline_div = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]')))
 
-            # Find all profile links
-            profile_links = timeline_div.find_elements(By.XPATH, './/div[contains(@class, "css-175oi2r r-1wbh5a2 r-dnmrzs")]//a')
-
-            for link in profile_links:
-                href = link.get_attribute('href')
-                if not self.is_profile_processed(href):
-                    self.driver.execute_script(f"window.open('{href}', '_blank');")
-                    self.window_handles = self.driver.window_handles
-                    self.logger.info(f'Opened profile in new tab: {href}')
-                    self.mark_profile_as_processed(href)
-                    return True
-
-            # If we've gone through all visible links, try scrolling
             last_height = self.driver.execute_script("return document.body.scrollHeight")
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            sleep(2)
-            new_height = self.driver.execute_script("return document.body.scrollHeight")
+            scroll_pause_time = 0.7  # Adjust this value if needed
+            while True:
+                # Scroll down gradually
+                self.driver.execute_script("window.scrollBy(0, 400);")
+                sleep(scroll_pause_time)
 
-            if new_height == last_height:
-                self.logger.info("No more profiles to process")
-                return False  # No more profiles to process
+                # Find all profile links
+                profile_links = timeline_div.find_elements(By.XPATH, './/div[contains(@class, "css-175oi2r r-1wbh5a2 r-dnmrzs")]//a[@role="link"]')
+                
+                for link in profile_links:
+                    href = link.get_attribute('href')
+                    if href and href not in self.following:
+                        self.following.append(href)
 
-            return self.open_profile_in_new_tab()  # Recursively call after scrolling
+                # Calculate new scroll height and compare with last scroll height
+                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    # Try scrolling a bit more to ensure we've reached the bottom
+                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    sleep(scroll_pause_time)
+                    new_height = self.driver.execute_script("return document.body.scrollHeight")
+                    if new_height == last_height:
+                        # If heights are still the same, we've reached the end of the page
+                        break
+                last_height = new_height
+
+            self.logger.info(f"Scraped {len(self.following)} profile links")
+            return True
 
         except TimeoutException:
-            self.logger.warning("Timeline not found. The page might not have loaded properly.")
+            self.logger.warning("The page might not have loaded properly.")
             return False
         except Exception as e:
-            self.logger.exception(f'Failed to open profile in new tab. Error: {str(e)}')
+            self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
             return False
-
+    
     def scroll_to_latest_post(self):
         """
         Scrolls down to the latest non-ad and non-pinned post on an X profile.

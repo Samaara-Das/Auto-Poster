@@ -3,6 +3,7 @@ from database_manager import DatabaseManager
 from x_controller import XController, VerificationRequiredException
 from time import sleep
 
+# These are high level methods that interact with XController methods.
 class XBot:
     def __init__(self, username, password, email, content, gui_callback):
         self.db_manager = DatabaseManager()
@@ -17,12 +18,12 @@ class XBot:
         self.gui_callback = gui_callback  # New: callback function for GUI updates
 
     def initialize_environment(self):
-        # Clear processed profiles, sign in to X if logged out, and go to following
+        '''This method clears the processed profiles, signs in to X and goes to the following page of the specified user. It also updates the GUI with a list of the people that the user is following and displays error messages if any occur'''
         with open('processed_profiles.json', 'w') as f:
             json.dump([], f)
         try:
             self.browser.sign_in(self.username, self.password, self.email)
-            self.browser.go_to_following(self.username)
+            self.get_following()
         except VerificationRequiredException as ve:
             error_message = str(ve)
             self.gui_callback(error_message)  # Use the callback to update GUI
@@ -33,17 +34,19 @@ class XBot:
             return False
         return True
 
-    def process_profile(self):
-        if not self.browser.open_profile_in_new_tab():
-            return False  # No more profiles to process
-        self.browser.driver.switch_to.window(self.browser.window_handles[-1])
-        return True
+    def get_following(self):
+        '''This method gets the list of people that the user is following and displays it on the GUI'''
+        self.browser.go_to_following(self.username)
+        self.browser.get_following_usernames()
+        self.gui_callback("update_following_list", self.browser.following)
 
     def interact_with_tweet(self):
         tweet_element = self.browser.scroll_to_latest_post()
         if not tweet_element:
             print("Failed to find the latest non-ad and non-pinned tweet")
             return
+
+        self.like_and_reply(tweet_element, tweet_author)
 
         tweet_link = self.browser.get_tweet_link(tweet_element)
         tweet_author = self.browser.get_tweet_author(tweet_element)
@@ -54,7 +57,19 @@ class XBot:
         self.db_manager.save_tweet(tweet_link, tweet_author)
         print(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
 
-        self.like_and_reply(tweet_element, tweet_author)
+    def open_profile(self, profile_url):
+        """
+        Opens the profile of the next person in the list of people that the user is following.
+        Returns True if the profile is opened, False otherwise.
+        """
+        try:
+            # Open the X profile
+            self.browser.driver.get(profile_url)
+            self.browser.logger.info(f"Opened profile: {profile_url}")
+            return True
+        except Exception as e:
+            self.browser.logger.exception(f"Failed to open profile. Error: {str(e)}")
+            return False
 
     def like_and_reply(self, tweet_element, tweet_author):
         for attempt in range(self.max_retries):
@@ -86,17 +101,17 @@ class XBot:
             return  # Exit the method if initialization fails
 
         while True:
-            try:
-                if not self.process_profile():
-                    break
-                self.interact_with_tweet()
-                self.cleanup()
-            except Exception as e:
-                error_message = f"An error occurred while processing a profile: {str(e)}"
-                self.gui_callback(error_message)  # Use the callback to update GUI
-                self.browser.logger.exception("Error in main loop")
-                self.cleanup()
-                sleep(self.retry_delay)
+            for profile in self.browser.following:
+                try:
+                    self.open_profile(profile)
+                    self.interact_with_tweet()
+                except Exception as e:
+                    error_message = f"An error occurred while processing a profile: {str(e)}"
+                    self.gui_callback(error_message)  # Use the callback to update GUI
+                    self.browser.logger.exception("Error in main loop")
+                    sleep(self.retry_delay)
+            
+            break # if for loop broken, break the while loop
 
         self.browser.driver.stop_client()
         self.browser.driver.close()
