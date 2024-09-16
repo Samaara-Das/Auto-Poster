@@ -50,11 +50,31 @@ class XController:
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
         self.processed_profiles = set() # Always return an empty set when the program starts
-        following = []
+        self.following = []
+        self.added_people = []
 
     def save_processed_profiles(self):
         with open('processed_profiles.json', 'w') as f:
             json.dump(list(self.processed_profiles), f)
+
+    def check_user_exists(self, username):
+        '''This method checks if the specified user exists on X. If the user exists, it returns the account name, otherwise it returns False.'''
+        try:
+            # Navigate to the user's profile
+            self.driver.get(f"https://x.com/{username}")
+            
+            # Wait for the page to load
+            account_name = WebDriverWait(self.driver, 7).until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="UserName"]//span[@class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3"]')))
+
+            # Check if the user exists by checking if "@" is in the tab title
+            user_exists = f"@" in self.driver.title
+            if user_exists:
+                return account_name.text
+            else:
+                return False
+        except Exception as e:
+            self.logger.exception(f"Error checking if user exists: {e}")
+            return False
 
     def is_profile_processed(self, profile_url):
         return profile_url in self.processed_profiles
@@ -178,16 +198,23 @@ class XController:
             scroll_pause_time = 0.7  # Adjust this value if needed
             while True:
                 # Scroll down gradually
-                self.driver.execute_script("window.scrollBy(0, 400);")
+                self.driver.execute_script("window.scrollBy(0, 600);")
                 sleep(scroll_pause_time)
 
                 # Find all profile links
-                profile_links = timeline_div.find_elements(By.XPATH, './/div[contains(@class, "css-175oi2r r-1wbh5a2 r-dnmrzs")]//a[@role="link"]')
+                profile_elements = timeline_div.find_elements(By.XPATH, './/div[@class="css-175oi2r r-1adg3ll r-1ny4l3l"]')
                 
-                for link in profile_links:
-                    href = link.get_attribute('href')
-                    if href and href not in self.following:
-                        self.following.append(href)
+                for element in profile_elements:
+                    link_element = element.find_element(By.XPATH, './/a[@role="link"]')
+                    name_element = element.find_element(By.XPATH, './/span[@class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3"]')
+                    
+                    href = link_element.get_attribute('href')
+                    name = name_element.text
+                    
+                    profile_info = {"link": href, "name": name, "reply": True} 
+                    
+                    if href and profile_info not in self.following:
+                        self.following.append(profile_info)
 
                 # Calculate new scroll height and compare with last scroll height
                 new_height = self.driver.execute_script("return document.body.scrollHeight")
@@ -388,3 +415,16 @@ class XController:
         except Exception as e:
             self.logger.exception(f"Failed to close tab. Error: {str(e)}")
             return False
+
+    def close_browser(self):
+        """
+        Closes the browser safely.
+        """
+        try:
+            if self.driver:
+                self.driver.stop_client()
+                self.driver.close()
+                self.driver.quit()
+            self.logger.info("Browser closed successfully")
+        except Exception as e:
+            self.logger.exception(f"Error closing browser: {str(e)}")

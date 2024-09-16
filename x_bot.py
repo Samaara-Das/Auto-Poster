@@ -2,20 +2,27 @@ import json
 from database_manager import DatabaseManager
 from x_controller import XController, VerificationRequiredException
 from time import sleep
+from delete_reactions import delete_all_replies, delete_all_likes
 
 # These are high level methods that interact with XController methods.
 class XBot:
-    def __init__(self, username, password, email, content, gui_callback):
+    def __init__(self, gui_callback):
         self.db_manager = DatabaseManager()
         self.browser = XController()
         self.max_retries = 3
         self.retry_delay = 5
         self.profile_delay = 2
+        self.username = ''
+        self.password = ''
+        self.email = ''
+        self.content = ''
+        self.gui_callback = gui_callback  # New: callback function for GUI updates
+        self.is_running = False
+
+    def init_credentials(self, username, password, email):
         self.username = username
         self.password = password
         self.email = email
-        self.content = content
-        self.gui_callback = gui_callback  # New: callback function for GUI updates
 
     def initialize_environment(self):
         '''This method clears the processed profiles, signs in to X and goes to the following page of the specified user. It also updates the GUI with a list of the people that the user is following and displays error messages if any occur'''
@@ -40,48 +47,58 @@ class XBot:
         self.browser.get_following_usernames()
         self.gui_callback("update_following_list", self.browser.following)
 
-    def interact_with_tweet(self):
+    def interact_with_tweet(self, profile):
         tweet_element = self.browser.scroll_to_latest_post()
         if not tweet_element:
             print("Failed to find the latest non-ad and non-pinned tweet")
             return
-
-        self.like_and_reply(tweet_element, tweet_author)
 
         tweet_link = self.browser.get_tweet_link(tweet_element)
         tweet_author = self.browser.get_tweet_author(tweet_element)
         if not (tweet_link and tweet_author):
             print(f"Failed to get tweet link for {tweet_author}")
             return
+        
+        self.like_tweet(tweet_element, tweet_author)
+        if profile['reply']:
+            self.reply_to_tweet(tweet_element, tweet_author)
 
         self.db_manager.save_tweet(tweet_link, tweet_author)
         print(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
 
-    def open_profile(self, profile_url):
+    def open_profile(self, profile):
         """
         Opens the profile of the next person in the list of people that the user is following.
         Returns True if the profile is opened, False otherwise.
         """
         try:
+            # Ensure the URL is complete
+            url = profile['link']
+            if not url.startswith(('http://', 'https://')):
+                url = f'https://{url}'
+            
             # Open the X profile
-            self.browser.driver.get(profile_url)
-            self.browser.logger.info(f"Opened profile: {profile_url}")
+            self.browser.driver.get(url)
+            self.browser.logger.info(f"Opened profile: {url}")
             return True
         except Exception as e:
             self.browser.logger.exception(f"Failed to open profile. Error: {str(e)}")
             return False
 
-    def like_and_reply(self, tweet_element, tweet_author):
-        for attempt in range(self.max_retries):
-            if self.browser.like_tweet(tweet_element):
-                print(f"Liked the tweet by {tweet_author} successfully")
-                self.send_reply(tweet_element, tweet_author)
-                break
-            elif attempt < self.max_retries - 1:
-                print(f"Failed to like tweet, retrying in {self.retry_delay} seconds...")
-                sleep(self.retry_delay)
-            else:
-                print(f"Failed to like the tweet by {tweet_author} after {self.max_retries} attempts")
+    def like_tweet(self, tweet_element, tweet_author):
+        if self.browser.like_tweet(tweet_element):
+            print(f"Liked the tweet by {tweet_author} successfully")
+            return True
+        else:
+            print(f"Failed to like the tweet by {tweet_author}")
+            return False
+
+    def reply_to_tweet(self, tweet_element, tweet_author):
+        try:
+            self.send_reply(tweet_element, tweet_author)
+        except Exception as e:
+            print(f"Failed to reply to tweet by {tweet_author}. Error: {str(e)}")
+            self.browser.logger.exception(f"Error replying to tweet by {tweet_author}")
 
     def send_reply(self, tweet_element, tweet_author):
         if self.browser.click_reply_button(tweet_element):
@@ -100,20 +117,38 @@ class XBot:
         if not self.initialize_environment():
             return  # Exit the method if initialization fails
 
-        while True:
-            for profile in self.browser.following:
+        self.is_running = True
+        while self.is_running:
+            for profile in self.browser.added_people + self.browser.following:
+                if not self.is_running:
+                    break
                 try:
                     self.open_profile(profile)
-                    self.interact_with_tweet()
+                    self.interact_with_tweet(profile)
                 except Exception as e:
                     error_message = f"An error occurred while processing a profile: {str(e)}"
-                    self.gui_callback(error_message)  # Use the callback to update GUI
+                    self.gui_callback(error_message)
                     self.browser.logger.exception("Error in main loop")
                     sleep(self.retry_delay)
             
-            break # if for loop broken, break the while loop
+            if not self.is_running:
+                break
 
-        self.browser.driver.stop_client()
-        self.browser.driver.close()
-        self.browser.driver.quit()
-        self.gui_callback("Bot finished running.")  # Notify GUI that the bot has finished
+    def delete_replies(self):
+        """Invokes the delete_all_replies function"""
+        success = delete_all_replies(self.browser.driver, self.browser.logger, self.username)
+        if success:
+            self.gui_callback("All replies deleted successfully.")
+        else:
+            self.gui_callback("Failed to delete all replies.")
+
+    def delete_likes(self):
+        """Invokes the delete_all_likes function"""
+        delete_all_likes(self.browser.driver, self.browser.logger, self.username)
+        self.gui_callback("Attempt to delete all likes completed.")
+
+    def stop_bot(self):
+        self.is_running = False
+        if hasattr(self, 'browser'):
+            self.browser.close_browser()
+
