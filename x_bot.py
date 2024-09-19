@@ -1,15 +1,17 @@
-import json
 from database_manager import DatabaseManager
-from x_controller import XController, VerificationRequiredException
+from x_controller import XController, VerificationRequiredException, rest
 from time import sleep
 from delete_reactions import delete_all_replies, delete_all_likes
 from logger import logger, clear_log_file
+import threading
+import json
 
 # These are high level methods that interact with XController methods.
 class XBot:
     def __init__(self, gui_callback):
         self.db_manager = DatabaseManager()
         self.browser = XController()
+        self.get_following_lock = threading.Lock()
         self.max_retries = 3
         self.retry_delay = 5
         self.profile_delay = 2
@@ -45,11 +47,13 @@ class XBot:
 
     def get_following(self):
         '''This method gets the list of people that the user is following and displays it on the GUI'''
-        self.browser.go_to_following(self.username)
-        self.browser.get_following()
-        self.gui_callback("update_following_list", self.db_manager.get_following_list())
+        with self.get_following_lock:
+            self.browser.go_to_following(self.username)
+            self.browser.get_following()
+            self.gui_callback("update_following_list", self.db_manager.get_following_list())
 
     def interact_with_tweet(self, profile):
+        self.browser.reload_page(mins_to_wait=2)
         tweet_element = self.browser.scroll_to_latest_post()
         if not tweet_element:
             self.logger.warning("Failed to find the latest non-ad and non-pinned tweet")
@@ -68,6 +72,7 @@ class XBot:
         self.db_manager.save_tweet(tweet_link, tweet_author)
         self.logger.info(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
 
+    @rest
     def open_profile(self, profile):
         """
         Opens the profile of the next person in the list of people that the user is following.
@@ -119,6 +124,7 @@ class XBot:
             return  # Exit the method if initialization fails
 
         self.is_running = True
+        self.get_following() 
         following_list = self.db_manager.get_following_list()
         while self.is_running:
             for profile in self.browser.added_people + following_list:

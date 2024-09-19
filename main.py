@@ -145,6 +145,9 @@ class TwitterBotGUI:
         self.bot = XBot(self.update_gui)
         self.is_bot_running = False
 
+        # Load added profiles from the database
+        self.load_added_profiles()
+
     def toggle_password_visibility(self):
         if self.show_password_var.get():
             self.password_entry.config(show="")
@@ -204,7 +207,12 @@ class TwitterBotGUI:
         if action == "update_following_list":
             self.reply_list.delete(*self.reply_list.get_children())  # Clear existing items
             for profile in data:
-                self.reply_list.insert("", "end", values=(profile['name'], "", '✓' if profile['reply'] else ''), tags=(profile['link']))
+                reply_value = profile.get('reply', True)  # Default to True if 'reply' field is not present
+                self.reply_list.insert("", "end", values=(
+                    profile['name'],
+                    '' if reply_value else '✓',  # See Tweet
+                    '✓' if reply_value else ''   # Reply
+                ), tags=(profile['link']))
             # Update the label with the following count
             self.following_label.config(text=f"People you're following: {len(data)}")
         elif action == "Bot finished running.":
@@ -222,11 +230,21 @@ class TwitterBotGUI:
         if username:
             name = self.check_username_exists(username)
             if name:
-                self.added_people_list.insert("", "end", values=(name, "", "✓"))
-                self.bot.browser.added_people.append({"link": 'x.com/' + username, "name": name, "reply": True})
-                self.update_added_people_count()
-                messagebox.showinfo("Success", f"@{username} added successfully.")
+                # Scrape profile data
+                profile_link = f"https://x.com/{username}"
+                scraped_data = self.bot.browser.scrape_profile_data(profile_link)
+                if scraped_data:
+                    self.bot.db_manager.save_added_profile(scraped_data)
+                    self.added_people_list.insert("", "end", values=(name, "✓" if scraped_data.get('reply', True) else "", "✓" if not scraped_data.get('reply', True) else ""))
+                    self.bot.browser.added_people.append({
+                        "link": scraped_data['link'],
+                        "name": name,
+                        "reply": scraped_data.get('reply', True)
+                    })
+                    self.update_added_people_count()
+                    messagebox.showinfo("Success", f"@{username} added successfully.")
             else:
+                self.added_people_list.insert("", "end", values=(username, "", ""))
                 messagebox.showerror("Error", f"Please enter a valid X username.")
 
     def update_added_people_count(self):
@@ -360,14 +378,36 @@ class TwitterBotGUI:
         for profile in self.bot.browser.following:
             if profile['link'] == profile_link:
                 profile['reply'] = reply_status
+                # Update the MongoDB document
+                self.bot.db_manager.following_collection.update_one(
+                    {'link': profile_link},
+                    {'$set': {'reply': reply_status}}
+                )
                 break
 
     def update_added_profile_reply_status(self, item, reply_status):
-        name = self.added_people_list.item(item, "values")[0]
+        profile_link = self.added_people_list.item(item, "values")[0]
         for profile in self.bot.browser.added_people:
-            if profile['name'] == name:
+            if profile['link'] == profile_link:
                 profile['reply'] = reply_status
+                self.bot.db_manager.update_added_profile(profile['link'], reply_status)
                 break
+
+    def load_added_profiles(self):
+        '''Loads added profiles from MongoDB and populates the Added list in the GUI.'''
+        added_profiles = self.bot.db_manager.get_added_profiles()
+        for profile in added_profiles:
+            self.added_people_list.insert("", "end", values=(
+                profile['name'],
+                '✓' if profile.get('reply', True) else '',
+                '✓' if profile.get('reply', False) else ''
+            ))
+            self.bot.browser.added_people.append({
+                "link": profile['link'],
+                "name": profile['name'],
+                "reply": profile.get('reply', True)
+            })
+        self.update_added_people_count()
 
 if __name__ == '__main__':
     root = tk.Tk()

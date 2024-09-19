@@ -16,7 +16,16 @@ class DatabaseManager:
         self.db = self.client['auto_poster']
         self.tweets_collection = self.db['tweets']
         self.following_collection = self.db['following']
+        self.added_collection = self.db['added']
         self.logger = logger('database_manager')
+
+    def delete_docs_in_collection(self, collection_name):
+        '''This deletes all the documents in a collection'''
+        try:
+            self.db[collection_name].delete_many({})
+            self.logger.info(f"Successfully deleted all documents in {collection_name}")
+        except Exception as e:
+            self.logger.error(f"Failed to delete documents in {collection_name}. Error: {str(e)}")
 
     def save_tweet(self, tweet_link, username):
         parsed_url = urlparse(tweet_link)
@@ -41,15 +50,18 @@ class DatabaseManager:
             self.logger.info(f"Updated existing tweet: {tweet_id}")
 
     def save_profile(self, data: dict):
-        '''This saves an X profile to the following collection in MongoDB if it doesn't already exist'''
+        '''This saves an X profile to the following collection. If the profile already exists in the collection, the profile will be updated with the new data'''
         try:
             username = data.get('username')
-            existing_profile = self.following_collection.find_one({'username': username})
-            if existing_profile is None:
-                self.following_collection.insert_one(data)
+            result = self.following_collection.update_one(
+                {'username': username},
+                {'$set': data},
+                upsert=True
+            )
+            if result.upserted_id:
                 self.logger.info(f"Successfully saved new profile for: {username}")
             else:
-                self.logger.info(f"Profile for {username} already exists. Skipping insertion.")
+                self.logger.info(f"Updated existing profile for: {username}")
         except Exception as e:
             self.logger.error(f"Failed to save profile. Error: {str(e)}")
 
@@ -67,8 +79,42 @@ class DatabaseManager:
     def get_following_list(self):
         '''This returns a list of all the profiles in the following collection in MongoDB'''
         try:
-            following_list = list(self.following_collection.find({}))
+            following_list = list(self.following_collection.find({}, {'_id': 0, 'username': 1, 'name': 1, 'link': 1, 'reply': 1}))
             return following_list
         except Exception as e:
             self.logger.error(f"Failed to get following list. Error: {str(e)}")
             return []
+
+    def save_added_profile(self, data: dict):
+        '''Saves a profile to the added collection.'''
+        try:
+            self.added_collection.update_one(
+                {'link': data['link']},
+                {'$set': data},
+                upsert=True
+            )
+            self.logger.info(f"Added profile: {data['username']}")
+        except Exception as e:
+            self.logger.error(f"Failed to save added profile. Error: {str(e)}")
+
+    def get_added_profiles(self):
+        '''Retrieves all profiles from the added collection.'''
+        try:
+            added_profiles = list(self.added_collection.find({}, {'_id': 0}))
+            self.logger.info(f"Retrieved {len(added_profiles)} added profiles")
+            return added_profiles
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve added profiles. Error: {str(e)}")
+            return []
+
+    def update_added_profile(self, link: str, reply: bool):
+        '''Updates the reply field of a profile in the added collection.'''
+        try:
+            self.added_collection.update_one(
+                {'link': link},
+                {'$set': {'reply': reply}}
+            )
+            self.logger.info(f"Updated reply status for profile: {link} to {reply}")
+        except Exception as e:
+            self.logger.error(f"Failed to update added profile. Error: {str(e)}")
+

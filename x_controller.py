@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from time import sleep
 import json
 from logger import logger, clear_log_file
+import random
+import functools
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,18 @@ CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
 class VerificationRequiredException(Exception):
     """Custom exception for when verification is required during login."""
     pass
+
+def rest(func):
+    '''This decorator adds a random sleep time between 1 and 2 seconds after the decorated function is called. This was created to reduce the likelihood of the Retry button appearing on X'''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        sleep_time = random.uniform(1, 2.5)
+        logger.info(f'Sleeping for {sleep_time} seconds')
+        sleep(sleep_time)
+        return result
+    return wrapper
+
 
 class XController:
 
@@ -59,12 +73,6 @@ class XController:
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         
-    def save_processed_profiles(self):
-        '''This method saves the processed profiles to a JSON file'''
-        self.logger.info(f'Saving processed profiles: {self.processed_profiles}')
-        with open('processed_profiles.json', 'w') as f:
-            json.dump(list(self.processed_profiles), f)
-
     def check_user_exists(self, username):
         '''This method checks if the specified user exists on X. If the user exists, it returns the account name, otherwise it returns False.'''
         try:
@@ -86,13 +94,6 @@ class XController:
             self.logger.exception(f"Error checking if user exists: {e}")
             return False
 
-    def is_profile_processed(self, profile_url):
-        return profile_url in self.processed_profiles
-
-    def mark_profile_as_processed(self, profile_url):
-        self.processed_profiles.add(profile_url)
-        self.save_processed_profiles()
-
     def open_page(self, url: str):
         '''This opens `url` and maximizes the window'''
         try:
@@ -107,6 +108,7 @@ class XController:
             self.logger.exception(f'Cannot open this url: {url}')
             return False 
 
+    @rest
     def sign_in(self, username, password, email):
         '''This method checks if the user is logged in to X, if not, it will sign in to the specified account'''
         self.driver.get('https://x.com/login') # go to X
@@ -127,6 +129,7 @@ class XController:
             self.logger.info('User is not logged in to X')
             self._login(username, password, email)
 
+    @rest
     def _logout(self):
         '''Helper method to log out the current user'''
         self.logger.info('Logging out the current user')
@@ -142,6 +145,7 @@ class XController:
         login_button = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))
         login_button.click()
 
+    @rest
     def _login(self, username, password, email):
         '''Helper method to perform the actual login process'''
         try:
@@ -199,7 +203,7 @@ class XController:
 
     def get_following(self):
         """
-        Scrapes profile links and names from the following page and adds them to the list of profile URLs 'following'.
+        Goes through the following page and scrapes the data of the profiles that the user is following. The data of a profile is stored in MongoDB if it's not already in the database.
         """
         try:
             if self.following:  # if the list of following usernames is already filled with links, return True
@@ -256,6 +260,7 @@ class XController:
             self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
             return False
     
+    @rest
     def scrape_profile_data(self, link):
         """
         Scrapes and stores data of an X profile in the MongoDB database. Includes username, name, link, bio, location, website, following count, followers count, followers you follow and more info.
@@ -266,6 +271,8 @@ class XController:
             self.driver.switch_to.window(self.driver.window_handles[-1])
             self.driver.get(link)
             self.logger.info(f'Opened {link} in new tab')
+
+            self.reload_page()
 
             # Wait for the page to load
             name_element = WebDriverWait(self.driver, 10).until(
@@ -290,7 +297,7 @@ class XController:
 
             # Scrape the followers the user is following
             try:
-                WebDriverWait(profile, 2).until(EC.presence_of_element_located((By.XPATH, '//span[contains(text(), "Not followed by anyone you’re following")]')))
+                WebDriverWait(profile, 1.2).until(EC.presence_of_element_located((By.XPATH, '//span[contains(text(), "Not followed by anyone you’re following")]')))
                 self.logger.info(f"{username} is not followed by anyone you're following.")
                 followers_you_follow = []
             except TimeoutException:
@@ -307,7 +314,9 @@ class XController:
                 more_info = WebDriverWait(self.driver, 3).until(
                     EC.presence_of_element_located((By.XPATH, '//div[@class="extended-profile"]'))
                 ).text
-            except TimeoutException:
+            except TimeoutException as te:
+                self.logger.info(f"Timeout while clicking the 'View More' button: {te}")    
+            except Exception as e:
                 self.logger.info("No 'View More' button found")
 
             # Save the profile data to the database
@@ -329,10 +338,13 @@ class XController:
             self.close_current_tab()
         except TimeoutException as te:
             self.logger.error(f"Timeout while loading profile data: {te}")
+            self.close_current_tab()
         except NoSuchElementException as nse:
             self.logger.error(f"Element not found while storing profile data: {nse}")
+            self.close_current_tab()
         except Exception as e:
             self.logger.exception(f"Failed to store profile data. Error: {str(e)}")
+            self.close_current_tab()
             return False
 
     def _get_optional_field(self, profile, xpath, attr=None):
@@ -346,6 +358,7 @@ class XController:
             self.logger.info(f"Optional field not found for xpath: {xpath}")
             return ''
 
+    @rest
     def _fetch_followers_you_follow(self):
         """
         Fetches the list of followers you follow.
@@ -380,7 +393,7 @@ class XController:
                     sleep(scroll_pause_time)
                     new_height = self.driver.execute_script("return document.body.scrollHeight")
                     if new_height == last_height:
-                        self.logger.info('Reached the bottom of the page or no new followers found')
+                        self.logger.info('Reached the bottom of the page')
                         break
                 last_height = new_height
 
@@ -409,7 +422,7 @@ class XController:
             )
 
             # Scroll until a non-ad and non-pinned tweet article is visible or max attempts reached
-            max_attempts = 20
+            max_attempts = 5
             for _ in range(max_attempts):
                 tweets = timeline.find_elements(By.XPATH, '//article[@data-testid="tweet"]')
                 for tweet in tweets:
@@ -433,6 +446,27 @@ class XController:
             self.logger.exception(f"Failed to scroll to latest non-ad and non-pinned post. Error: {str(e)}")
             return None
 
+    def reload_page(self, mins_to_wait=3):
+        """
+        If the Retry button is found, we wait for a minute, refresh the page and wait for the page to fully load.
+        """
+        try:
+            # check if the Retry button is present on the page
+            retry_span = self.driver.find_element(By.XPATH, '//div[@data-testid="primaryColumn"] //span[text()="Retry"]')
+            self.logger.info(f"Retry button found. Will sleep for {mins_to_wait} minutes before reloading the page.")
+            mins = mins_to_wait * 60
+            sleep(mins) # sleep for 2 minutes
+            self.driver.refresh()
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="primaryColumn"]')))
+            sleep(2)
+            return True
+        except NoSuchElementException:
+            self.logger.info("No Retry button found, no need to reload the page")
+            return True
+        except Exception as e:
+            self.logger.exception(f"Failed to reload the page. Error: {str(e)}")
+            return False
+    
     def get_tweet_link(self, tweet_element):
         """
         Extracts the tweet link from the given tweet element.
@@ -459,6 +493,7 @@ class XController:
             self.logger.error("Could not find tweet author")
             return None
 
+    @rest
     def like_tweet(self, tweet_element):
         """
         Checks if the given tweet is liked. If not, it likes the tweet.
@@ -475,7 +510,6 @@ class XController:
             
             # If not liked, click the like button
             like_button.click()
-            sleep(1)  # Wait for the like action to complete
             
             self.logger.info("Successfully liked the tweet")
             return True
@@ -508,6 +542,7 @@ class XController:
             self.logger.exception(f"Failed to click the reply button. Error: {str(e)}")
             return False
 
+    @rest
     def type_reply(self, reply_text):
         """
         Types the given text into the reply box.
@@ -523,6 +558,7 @@ class XController:
             self.logger.exception(f"Failed to type reply. Error: {str(e)}")
             return False
 
+    @rest
     def send_reply(self):
         """
         Clicks the send button for the reply.
@@ -532,7 +568,6 @@ class XController:
                 EC.element_to_be_clickable((By.XPATH, '//button[@data-testid="tweetButton"]'))
             )
             send_button.click()
-            sleep(2)  # Wait for the reply to be sent
             self.logger.info("Successfully clicked the reply send button")
             return True
         except TimeoutException:
@@ -542,6 +577,7 @@ class XController:
             self.logger.exception(f"Failed to click reply send button. Error: {str(e)}")
             return False
 
+    @rest
     def close_current_tab(self):
         """
         Closes the current tab and switches back to the previous one.
