@@ -143,7 +143,7 @@ class TwitterBotGUI:
 
         # Create XBot instance with GUI callback
         self.bot = XBot(self.update_gui)
-        self.is_bot_running = False  # Add this line
+        self.is_bot_running = False
 
     def toggle_password_visibility(self):
         if self.show_password_var.get():
@@ -158,8 +158,7 @@ class TwitterBotGUI:
         email = self.email_entry.get()
         messages = self.message_box.get("1.0", tk.END).strip()
 
-        if not username or not password or not email:
-            messagebox.showerror("Error", "Please enter your X username, password and email.")
+        if not self.is_credentials_valid():
             return
 
         if not messages:
@@ -169,7 +168,7 @@ class TwitterBotGUI:
         # Start the bot in a separate thread
         self.bot.init_credentials(username, password, email)
         self.bot.content = messages
-        self.is_bot_running = True  # Add this line
+        self.is_bot_running = True 
         self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
         self.bot_thread.start()
         
@@ -205,10 +204,9 @@ class TwitterBotGUI:
         if action == "update_following_list":
             self.reply_list.delete(*self.reply_list.get_children())  # Clear existing items
             for profile in data:
-                self.reply_list.insert("", "end", values=(profile['name'], "", "✓"), tags=(profile['link'],))
+                self.reply_list.insert("", "end", values=(profile['name'], "", '✓' if profile['reply'] else ''), tags=(profile['link']))
             # Update the label with the following count
-            following_count = len(data)
-            self.following_label.config(text=f"People you're following: {following_count}")
+            self.following_label.config(text=f"People you're following: {len(data)}")
         elif action == "Bot finished running.":
             self.stop_button.config(state=tk.DISABLED)
             self.master.nametowidget(self.stop_button.master).nametowidget("!button").config(state=tk.NORMAL)
@@ -250,19 +248,6 @@ class TwitterBotGUI:
 
         return result[0]
 
-    def is_credentials_valid(self):
-        '''
-        This function checks if the credentials are valid.
-        '''
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        email = self.email_entry.get()
-
-        if not username or not password or not email:
-            messagebox.showerror("Error", "Please enter your X username, password and email.")
-            return False
-        return True
-
     def check_username_thread(self, username, result):
         '''
         This function checks if the provided username on X exists or not. If it does, the name of the account is returned.
@@ -274,14 +259,22 @@ class TwitterBotGUI:
             print(f"Error checking username: {e}")
             result[0] = False
 
-    @update_credentials
-    def get_following(self):
+    def is_credentials_valid(self):
+        '''
+        This function checks if the username, password and email are valid.
+        '''
         username = self.username_entry.get()
         password = self.password_entry.get()
         email = self.email_entry.get()
 
         if not username or not password or not email:
             messagebox.showerror("Error", "Please enter your X username, password and email.")
+            return False
+        return True
+
+    @update_credentials
+    def get_following(self):
+        if not self.is_credentials_valid():
             return
 
         # Start getting following in a separate thread
@@ -322,12 +315,7 @@ class TwitterBotGUI:
 
     @update_credentials
     def delete_replies(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        email = self.email_entry.get()
-
-        if not username or not password or not email:
-            messagebox.showerror("Error", "Please enter your X username, password and email.")
+        if not self.is_credentials_valid():
             return
 
         # Start deleting replies in a separate thread
@@ -335,12 +323,7 @@ class TwitterBotGUI:
 
     @update_credentials
     def delete_likes(self):
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-        email = self.email_entry.get()
-
-        if not username or not password or not email:
-            messagebox.showerror("Error", "Please enter your X username, password and email.")
+        if not self.is_credentials_valid():
             return
         
         # Start deleting likes in a separate thread

@@ -14,7 +14,8 @@ class DatabaseManager:
         connection_string = f"mongodb+srv://sammy:{pwd}@cluster1.565lfln.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1"
         self.client = MongoClient(connection_string)
         self.db = self.client['auto_poster']
-        self.collection = self.db['tweets']
+        self.tweets_collection = self.db['tweets']
+        self.following_collection = self.db['following']
         self.logger = logger('database_manager')
 
     def save_tweet(self, tweet_link, username):
@@ -28,7 +29,7 @@ class DatabaseManager:
             'timestamp': datetime.now()
         }
         
-        result = self.collection.update_one(
+        result = self.tweets_collection.update_one(
             {'tweet_id': tweet_id},
             {'$set': tweet_data},
             upsert=True
@@ -38,3 +39,36 @@ class DatabaseManager:
             self.logger.info(f"Inserted new tweet: {tweet_id}")
         else:
             self.logger.info(f"Updated existing tweet: {tweet_id}")
+
+    def save_profile(self, data: dict):
+        '''This saves an X profile to the following collection in MongoDB if it doesn't already exist'''
+        try:
+            username = data.get('username')
+            existing_profile = self.following_collection.find_one({'username': username})
+            if existing_profile is None:
+                self.following_collection.insert_one(data)
+                self.logger.info(f"Successfully saved new profile for: {username}")
+            else:
+                self.logger.info(f"Profile for {username} already exists. Skipping insertion.")
+        except Exception as e:
+            self.logger.error(f"Failed to save profile. Error: {str(e)}")
+
+    def is_profile_in_collection(self, link: str):
+        '''This checks if a profile is in the following collection in MongoDB'''
+        try:
+            existing_profile = self.following_collection.find_one({'link': link})
+            if existing_profile is None:
+                return False
+            else:
+                return True
+        except Exception as e:
+            self.logger.error(f"Failed to check if profile is in collection. Error: {str(e)}")
+
+    def get_following_list(self):
+        '''This returns a list of all the profiles in the following collection in MongoDB'''
+        try:
+            following_list = list(self.following_collection.find({}))
+            return following_list
+        except Exception as e:
+            self.logger.error(f"Failed to get following list. Error: {str(e)}")
+            return []
