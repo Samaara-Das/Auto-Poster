@@ -6,6 +6,7 @@ from tkinter import simpledialog
 import threading
 import sqlite3
 import functools
+from logger import logger
 
 # Load environment variables
 load_dotenv()
@@ -17,14 +18,20 @@ def update_credentials(func):
         password = self.password_entry.get()
         email = self.email_entry.get()
         self.bot.init_credentials(username, password, email)
+        self.logger.info(f"Credentials updated for function: {func.__name__}")
         return func(self, *args, **kwargs)
     return wrapper
 
 class TwitterBotGUI:
     def __init__(self, master):
         self.master = master
+        self.is_bot_running = False
         master.title("Auto Poster")
-        master.geometry("1100x700")  # Increased width to accommodate radio buttons
+        master.geometry("1100x700")
+
+        # Initialize logger
+        self.logger = logger(__name__)
+        self.logger.info("Initializing TwitterBotGUI")
 
         # Create a frame for the main content
         main_frame = ttk.Frame(master)
@@ -66,7 +73,8 @@ class TwitterBotGUI:
         self.message_box.pack(pady=10)
 
         # Start button
-        ttk.Button(left_frame, text="Start Bot", command=self.start_bot).pack(pady=10)
+        self.start_button = ttk.Button(left_frame, text="Start Bot", command=self.start_bot)
+        self.start_button.pack(pady=10)
 
         # Stop button
         self.stop_button = ttk.Button(left_frame, text="Stop Bot", command=self.stop_bot, state=tk.DISABLED)
@@ -124,6 +132,11 @@ class TwitterBotGUI:
         new_scrollbar.pack(side=tk.RIGHT, fill="y")
         self.added_people_list.configure(yscrollcommand=new_scrollbar.set)
 
+        # Add Delete button under the Added People list
+        self.delete_button = ttk.Button(right_frame, text="Delete", command=self.delete_person)
+        self.delete_button.pack(pady=10)
+        self.update_delete_button_state()
+
         # Add button (moved below the new list)
         ttk.Button(right_frame, text="Add", command=self.add_person).pack(pady=10)
 
@@ -143,12 +156,20 @@ class TwitterBotGUI:
 
         # Create XBot instance with GUI callback
         self.bot = XBot(self.update_gui)
-        self.is_bot_running = False
 
-        # Load added profiles from the database
+        # Load added profiles from MongoDB and populate the Added People list
         self.load_added_profiles()
 
+        # Load following profiles from MongoDB at startup
+        self.load_following_profiles()
+
+        self.logger.info("TwitterBotGUI initialization complete")
+
     def toggle_password_visibility(self):
+        '''
+        If the password is visible, it is hidden. Otherwise, if it is hidden, it is shown.
+        '''
+        self.logger.info("Toggling password visibility")
         if self.show_password_var.get():
             self.password_entry.config(show="")
         else:
@@ -162,12 +183,15 @@ class TwitterBotGUI:
         messages = self.message_box.get("1.0", tk.END).strip()
 
         if not self.is_credentials_valid():
+            self.logger.warning("Invalid credentials provided")
             return
 
         if not messages:
+            self.logger.warning("No content provided in the text box")
             messagebox.showerror("Error", "Please enter content in the text box.")
             return
         
+        self.logger.info("Starting bot")
         # Start the bot in a separate thread
         self.bot.init_credentials(username, password, email)
         self.bot.content = messages
@@ -177,20 +201,24 @@ class TwitterBotGUI:
         
         # Enable the Stop button and disable the Start button
         self.stop_button.config(state=tk.NORMAL)
-        self.master.nametowidget(self.stop_button.master).nametowidget("!button").config(state=tk.DISABLED)
+        self.start_button.config(state=tk.DISABLED)
+        self.update_delete_button_state()
 
     def run_bot(self):
-        # Add this method
         try:
+            self.logger.info("Bot thread started")
             self.bot.run()
         except Exception as e:
+            self.logger.exception(f"An error occurred while running the bot: {str(e)}")
             self.update_gui(f"An error occurred: {str(e)}")
         finally:
             self.is_bot_running = False
+            self.logger.info("Bot finished running")
             self.update_gui("Bot finished running.")
 
     def stop_bot(self):
         if hasattr(self, 'bot_thread') and self.bot_thread.is_alive():
+            self.logger.info("Stopping bot")
             self.is_bot_running = False
             self.bot.stop_bot()
             self.bot_thread.join(timeout=5)
@@ -201,10 +229,16 @@ class TwitterBotGUI:
 
             # Disable the Stop button and enable the Start button
             self.stop_button.config(state=tk.DISABLED)
-            self.master.nametowidget(self.stop_button.master).nametowidget("!button").config(state=tk.NORMAL)
+            self.start_button.config(state=tk.NORMAL)
+            self.logger.info("Bot stopped successfully")
+            self.update_delete_button_state()
 
     def update_gui(self, action, data=None):
+        '''
+        This function updates the GUI based on the action and data provided.
+        '''
         if action == "update_following_list":
+            self.logger.info("Updating following list in the GUI")
             self.reply_list.delete(*self.reply_list.get_children())  # Clear existing items
             for profile in data:
                 reply_value = profile.get('reply', True)  # Default to True if 'reply' field is not present
@@ -216,36 +250,47 @@ class TwitterBotGUI:
             # Update the label with the following count
             self.following_label.config(text=f"People you're following: {len(data)}")
         elif action == "Bot finished running.":
+            self.logger.info("showing the \"bot finished running\" message to the user")
             self.stop_button.config(state=tk.DISABLED)
-            self.master.nametowidget(self.stop_button.master).nametowidget("!button").config(state=tk.NORMAL)
+            self.start_button.config(state=tk.NORMAL)
             self.status_label.config(text=action)
+            self.is_bot_running = False
+            self.update_delete_button_state()
         else:
             self.status_label.config(text=action)
             if "Verification required" in action:
+                self.logger.info("showing a \"verification required\" message to the user")
                 messagebox.showwarning("Verification Required", action)
 
     @update_credentials
     def add_person(self):
         username = simpledialog.askstring("Add Person", "Enter the person's username:")
         if username:
+            self.logger.info(f"Attempting to add person: {username} to the GUI and MongoDB database")
             name = self.check_username_exists(username)
             if name:
-                # Scrape profile data
                 profile_link = f"https://x.com/{username}"
-                scraped_data = self.bot.browser.scrape_profile_data(profile_link)
-                if scraped_data:
-                    self.bot.db_manager.save_added_profile(scraped_data)
-                    self.added_people_list.insert("", "end", values=(name, "✓" if scraped_data.get('reply', True) else "", "✓" if not scraped_data.get('reply', True) else ""))
+                # Scrape profile data
+                profile_data = self.bot.browser.scrape_profile_data(profile_link)
+                if profile_data:
+                    # Save to 'added' collection
+                    self.bot.db_manager.save_added_profile(profile_data)
+                    # Add to GUI list
+                    self.added_people_list.insert("", "end", values=(name, "", "✓"))
                     self.bot.browser.added_people.append({
-                        "link": scraped_data['link'],
+                        "link": profile_link,
                         "name": name,
-                        "reply": scraped_data.get('reply', True)
+                        "reply": True
                     })
                     self.update_added_people_count()
+                    self.logger.info(f"Successfully added @{username} to the GUI and MongoDB database")
                     messagebox.showinfo("Success", f"@{username} added successfully.")
+                else:
+                    self.logger.warning(f"Failed to scrape profile data for @{username}")
+                    messagebox.showerror("Error", f"Failed to scrape profile data for @{username}.")
             else:
-                self.added_people_list.insert("", "end", values=(username, "", ""))
-                messagebox.showerror("Error", f"Please enter a valid X username.")
+                self.logger.warning(f"@{username} does not exist")
+                messagebox.showerror("Error", f"@{username} does not exist.")
 
     def update_added_people_count(self):
         count = len(self.added_people_list.get_children())
@@ -255,6 +300,7 @@ class TwitterBotGUI:
         '''
         This function checks if the username on X exists or not. `False` is returned if it does not exist or an error occurs. The name of the account is returned if it exists.
         '''
+        self.logger.info(f"Checking if @{username} exists")
         if not self.is_credentials_valid():
             return False
         
@@ -271,21 +317,24 @@ class TwitterBotGUI:
         This function checks if the provided username on X exists or not. If it does, the name of the account is returned.
         '''
         try:
+            self.logger.info(f"Checking if @{username} exists")
             exists = self.bot.browser.check_user_exists(username)
             result[0] = exists
         except Exception as e:
-            print(f"Error checking username: {e}")
+            self.logger.exception(f"Error checking username: {e}")
             result[0] = False
 
     def is_credentials_valid(self):
         '''
         This function checks if the username, password and email are valid.
         '''
+        self.logger.info("Checking if credentials are valid")
         username = self.username_entry.get()
         password = self.password_entry.get()
         email = self.email_entry.get()
 
         if not username or not password or not email:
+            self.logger.warning(f"Invalid credentials provided. username: {username}, password: {password}, email: {email}")
             messagebox.showerror("Error", "Please enter your X username, password and email.")
             return False
         return True
@@ -296,6 +345,7 @@ class TwitterBotGUI:
             return
 
         # Start getting following in a separate thread
+        self.logger.info("Starting to get following in a separate thread")
         threading.Thread(target=self.bot.get_following, daemon=True).start()
 
     def fill_fields(self):
@@ -303,6 +353,7 @@ class TwitterBotGUI:
         This function fills the username, email, password and tweet fields automatically with default data. This saves time while testing.
         '''
         try:
+            self.logger.info("Attempting to fill fields with default data from the SQL database")
             conn = sqlite3.connect('user_data.db')
             cursor = conn.cursor()
             
@@ -324,11 +375,14 @@ class TwitterBotGUI:
                 self.message_box.insert(tk.END, user_data[3])
                 
                 self.status_label.config(text="Fields filled successfully")
+                self.logger.info("Fields filled successfully with default data")
             else:
                 self.status_label.config(text="No data found in the database")
+                self.logger.warning("No data found in the database for filling fields")
             
             conn.close()
         except sqlite3.Error as e:
+            self.logger.exception(f"Database error while filling fields: {e}")
             self.status_label.config(text=f"Database error: {e}")
 
     @update_credentials
@@ -337,6 +391,7 @@ class TwitterBotGUI:
             return
 
         # Start deleting replies in a separate thread
+        self.logger.info("Starting to delete replies in a separate thread")
         threading.Thread(target=self.bot.delete_replies, daemon=True).start()
 
     @update_credentials
@@ -345,69 +400,144 @@ class TwitterBotGUI:
             return
         
         # Start deleting likes in a separate thread
+        self.logger.info("Starting to delete likes in a separate thread")
         threading.Thread(target=self.bot.delete_likes, daemon=True).start()
 
     def toggle_radio_button(self, event):
+        '''
+        This function toggles the See Tweet and Reply columns for a profile in the Following list.
+        '''
+        self.logger.info("Toggling the See Tweet and Reply columns for a profile in the Following list")
         item = self.reply_list.identify_row(event.y)
         column = self.reply_list.identify_column(event.x)
         
         if column == "#2":  # See Tweet column
+            self.logger.info(f"Toggling See Tweet")
             self.reply_list.set(item, "see_tweet", "✓")
             self.reply_list.set(item, "reply", "")
             self.update_profile_reply_status(item, False)
         elif column == "#3":  # Reply column
+            self.logger.info(f"Toggling Reply")
             self.reply_list.set(item, "see_tweet", "")
             self.reply_list.set(item, "reply", "✓")
             self.update_profile_reply_status(item, True)
 
     def toggle_added_people_radio_button(self, event):
+        '''
+        This function toggles the See Tweet and Reply columns for a profile in the Added People list.
+        '''
+        self.logger.info("Toggling the See Tweet and Reply columns for a profile in the Added People list")
         item = self.added_people_list.identify_row(event.y)
         column = self.added_people_list.identify_column(event.x)
         
         if column == "#2":  # See Tweet column
+            self.logger.info(f"Toggling See Tweet")
             self.added_people_list.set(item, "see_tweet", "✓")
             self.added_people_list.set(item, "reply", "")
             self.update_added_profile_reply_status(item, False)
         elif column == "#3":  # Reply column
+            self.logger.info(f"Toggling Reply")
             self.added_people_list.set(item, "see_tweet", "")
             self.added_people_list.set(item, "reply", "✓")
             self.update_added_profile_reply_status(item, True)
 
     def update_profile_reply_status(self, item, reply_status):
-        profile_link = self.reply_list.item(item, "tags")[0]
-        for profile in self.bot.browser.following:
-            if profile['link'] == profile_link:
-                profile['reply'] = reply_status
-                # Update the MongoDB document
-                self.bot.db_manager.following_collection.update_one(
-                    {'link': profile_link},
-                    {'$set': {'reply': reply_status}}
-                )
-                break
+        '''
+        This function updates the reply status of a profile in the mongodb database.
+        '''
+        try:
+            profile_link = self.reply_list.item(item, "tags")[0]
+            for profile in self.bot.browser.following:
+                if profile['link'] == profile_link:
+                    profile['reply'] = reply_status
+                    self.bot.db_manager.following_collection.update_one(
+                        {'link': profile_link},
+                        {'$set': {'reply': reply_status}}
+                    )
+                    self.logger.info(f"Updated reply status to {reply_status} for {profile_link}")
+                    break
+        except Exception as e:
+            self.logger.error(f"Failed to update profile reply status: {e}")
 
     def update_added_profile_reply_status(self, item, reply_status):
-        profile_link = self.added_people_list.item(item, "values")[0]
-        for profile in self.bot.browser.added_people:
-            if profile['link'] == profile_link:
+        try:
+            name = self.added_people_list.item(item, "values")[0]
+            profile = next((p for p in self.bot.browser.added_people if p['name'] == name), None)
+            self.logger.info(f"Updating the reply status of {profile['link']} in the Added list to {reply_status} in the mongodb database")
+            if profile:
                 profile['reply'] = reply_status
                 self.bot.db_manager.update_added_profile(profile['link'], reply_status)
-                break
+        except Exception as e:
+            self.logger.error(f"Failed to update reply status: {e}")
 
     def load_added_profiles(self):
-        '''Loads added profiles from MongoDB and populates the Added list in the GUI.'''
-        added_profiles = self.bot.db_manager.get_added_profiles()
-        for profile in added_profiles:
-            self.added_people_list.insert("", "end", values=(
-                profile['name'],
-                '✓' if profile.get('reply', True) else '',
-                '✓' if profile.get('reply', False) else ''
-            ))
-            self.bot.browser.added_people.append({
-                "link": profile['link'],
-                "name": profile['name'],
-                "reply": profile.get('reply', True)
-            })
-        self.update_added_people_count()
+        self.logger.info("Loading added profiles from MongoDB")
+        try:
+            added_profiles = self.bot.db_manager.get_added_profiles()
+            for profile in added_profiles:
+                self.added_people_list.insert("", "end", values=(
+                    profile['name'],
+                    '✓' if not profile.get('reply', True) else '',
+                    '✓' if profile.get('reply', True) else ''
+                ), tags=(profile['link']))
+                self.bot.browser.added_people.append(profile)
+            self.update_added_people_count()
+            self.logger.info(f"Successfully loaded {len(added_profiles)} added profiles")
+        except Exception as e:
+            self.logger.exception(f"Failed to load added profiles: {e}")
+
+    def delete_person(self):
+        self.logger.info("Attempting to delete a person from the added people list")
+        selected_item = self.added_people_list.selection()
+        if not selected_item:
+            self.logger.warning("No profile selected for deletion")
+            messagebox.showwarning("No Selection", "Please select a profile to delete.")
+            return
+
+        for item in selected_item:
+            profile_name = self.added_people_list.item(item, "values")[0]
+            # Assume 'link' is unique and stored as tag
+            profile_link = self.added_people_list.item(item, "tags")[0]
+            
+            self.logger.info(f"Attempting to delete profile: {profile_name} with link: {profile_link}")
+            
+            # Delete from MongoDB
+            success = self.bot.db_manager.delete_added_profile(profile_link)
+            if success:
+                # Remove from UI
+                self.added_people_list.delete(item)
+                self.update_added_people_count()
+                self.logger.info(f"Successfully deleted profile: {profile_name}")
+                messagebox.showinfo("Success", f"@{profile_name} has been deleted.")
+            else:
+                self.logger.error(f"Failed to delete profile: {profile_name}")
+                messagebox.showerror("Error", f"Failed to delete @ {profile_name}.")
+
+        self.update_delete_button_state()
+
+    def update_delete_button_state(self):
+        if self.is_bot_running:
+            self.delete_button.config(state=tk.DISABLED)
+            self.logger.info("Bot is running, disabling delete button")
+        else:
+            self.delete_button.config(state=tk.NORMAL)
+            self.logger.info("Bot is not running, enabling delete button")
+
+    def load_following_profiles(self):
+        '''Loads profiles from the following collection in MongoDB and populates the Following list in the GUI'''
+        try:
+            following_list = self.bot.db_manager.get_following_list()
+            self.bot.browser.following = following_list
+            for profile in following_list:
+                self.reply_list.insert("", "end", values=(
+                    profile['name'],
+                    '✓' if not profile['reply'] else '',
+                    '✓' if profile['reply'] else ''
+                ), tags=(profile['link']))
+            self.following_label.config(text=f"People you're following: {len(following_list)}")
+            self.logger.info("Loaded following profiles into the GUI")
+        except Exception as e:
+            self.logger.error(f"Failed to load following profiles: {e}")
 
 if __name__ == '__main__':
     root = tk.Tk()

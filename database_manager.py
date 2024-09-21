@@ -118,3 +118,20 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Failed to update added profile. Error: {str(e)}")
 
+    def delete_added_profile(self, link: str) -> bool:
+        '''
+        Deletes a profile from the added collection based on the link.
+        Returns True if deletion was successful, False otherwise.
+        '''
+        try:
+            result = self.added_collection.delete_one({'link': link})
+            if result.deleted_count > 0:
+                self.logger.info(f"Successfully deleted profile with link: {link}")
+                return True
+            else:
+                self.logger.warning(f"No profile found with link: {link}")
+                return False
+        except Exception as e:
+            self.logger.error(f"Failed to delete added profile. Error: {str(e)}")
+            return False
+

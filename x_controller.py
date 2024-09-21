@@ -32,7 +32,7 @@ def rest(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         sleep_time = random.uniform(1, 2.5)
-        logger.info(f'Sleeping for {sleep_time} seconds')
+        print(f'Sleeping for {sleep_time} seconds')
         sleep(sleep_time)
         return result
     return wrapper
@@ -206,9 +206,6 @@ class XController:
         Goes through the following page and scrapes the data of the profiles that the user is following. The data of a profile is stored in MongoDB if it's not already in the database.
         """
         try:
-            if self.following:  # if the list of following usernames is already filled with links, return True
-                return True 
-
             # Find the timeline element
             timeline_div = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]')))
 
@@ -249,7 +246,7 @@ class XController:
             self.logger.info(f"Scraped {len(self.following)} profile links")
             
             for profile in self.following:
-                if not self.db_manager.is_profile_in_collection(profile['link']): # store profile data if it's not already in MongoDB
+                if not self.db_manager.is_profile_in_collection(profile['link']): # add data of a profile if it's not already in MongoDB
                     self.scrape_profile_data(profile['link'])
 
             return True
@@ -261,9 +258,9 @@ class XController:
             return False
     
     @rest
-    def scrape_profile_data(self, link):
+    def scrape_profile_data(self, link) -> dict:
         """
-        Scrapes and stores data of an X profile in the MongoDB database. Includes username, name, link, bio, location, website, following count, followers count, followers you follow and more info.
+        Scrapes and returns data of an X profile.
         """
         try:
             # Open the profile in a new tab
@@ -288,9 +285,9 @@ class XController:
             name = name_element.text.split('@')[0].strip()
             following_count = profile.find_element(By.XPATH, './/a[contains(@href, "/following")]/span/span').text
             followers_count = profile.find_element(By.XPATH, './/a[contains(@href, "followers")]/span/span').text
-            bio = profile.find_element(By.XPATH, '//div[@data-testid="UserDescription"]').text
 
             # Optional fields
+            bio = self._get_optional_field(profile, '//div[@data-testid="UserDescription"]')
             location = self._get_optional_field(profile, '//div[@data-testid="UserProfileHeader_Items"]//span[@data-testid="UserLocation"]')
             website = self._get_optional_field(profile, '//div[@data-testid="UserProfileHeader_Items"]//a[@data-testid="UserUrl"]', attr='href')
             self.logger.info(f'Successfully scraped data from {username}')
@@ -319,8 +316,7 @@ class XController:
             except Exception as e:
                 self.logger.info("No 'View More' button found")
 
-            # Save the profile data to the database
-            self.db_manager.save_profile({
+            profile_data = {
                 'username': username,
                 'name': name,
                 'link': link,
@@ -331,11 +327,15 @@ class XController:
                 'website': website,
                 'followers_you_follow': followers_you_follow,
                 'more_info': more_info,
-                'reply': True,
-            })
+                'reply': True,  # Default to True when adding a new profile
+            }
 
-            # Close the current tab and switch back
-            self.close_current_tab()
+            # Save the profile data to the database
+            self.db_manager.save_profile(profile_data)
+
+            # Return the profile data for further use
+            return profile_data
+
         except TimeoutException as te:
             self.logger.error(f"Timeout while loading profile data: {te}")
             self.close_current_tab()
@@ -345,7 +345,7 @@ class XController:
         except Exception as e:
             self.logger.exception(f"Failed to store profile data. Error: {str(e)}")
             self.close_current_tab()
-            return False
+            return None
 
     def _get_optional_field(self, profile, xpath, attr=None):
         """

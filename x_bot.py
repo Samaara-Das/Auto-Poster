@@ -2,9 +2,8 @@ from database_manager import DatabaseManager
 from x_controller import XController, VerificationRequiredException, rest
 from time import sleep
 from delete_reactions import delete_all_replies, delete_all_likes
-from logger import logger, clear_log_file
+from logger import logger
 import threading
-import json
 
 # These are high level methods that interact with XController methods.
 class XBot:
@@ -24,14 +23,14 @@ class XBot:
         self.logger = logger(__name__)
 
     def init_credentials(self, username, password, email):
+        '''this sets the username, password and email attributes to the values passed in'''
         self.username = username
         self.password = password
         self.email = email
+        self.logger.info(f"Initialized credentials for {self.username}.")
 
     def initialize_environment(self):
-        '''This method clears the processed profiles, signs in to X and goes to the following page of the specified user. It also updates the GUI with a list of the people that the user is following and displays error messages if any occur'''
-        with open('processed_profiles.json', 'w') as f:
-            json.dump([], f)
+        '''This method signs in to X and goes to the following page of the specified user. It also updates the GUI with a list of the people that the user is following and displays error messages if any occur'''
         try:
             self.browser.sign_in(self.username, self.password, self.email)
             self.get_following()
@@ -46,13 +45,14 @@ class XBot:
         return True
 
     def get_following(self):
-        '''This method gets the list of people that the user is following and displays it on the GUI'''
+        '''This method opens the user's following page, gets the list of people that the user is following and displays it on the GUI'''
         with self.get_following_lock:
             self.browser.go_to_following(self.username)
             self.browser.get_following()
             self.gui_callback("update_following_list", self.db_manager.get_following_list())
 
     def interact_with_tweet(self, profile):
+        '''This method opens the profile page of the person passed in, scrolls to the latest tweet, likes the tweet, and replies to it if it's allowed. The tweet is then saved to the database.'''
         self.browser.reload_page(mins_to_wait=2)
         tweet_element = self.browser.scroll_to_latest_post()
         if not tweet_element:
@@ -75,7 +75,7 @@ class XBot:
     @rest
     def open_profile(self, profile):
         """
-        Opens the profile of the next person in the list of people that the user is following.
+        Opens the X profile of the person passed in.
         Returns True if the profile is opened, False otherwise.
         """
         try:
@@ -102,6 +102,7 @@ class XBot:
 
     def reply_to_tweet(self, tweet_element, tweet_author):
         try:
+            self.logger.info(f"Replying to the tweet by {tweet_author}")
             self.send_reply(tweet_element, tweet_author)
         except Exception as e:
             self.logger.exception(f"Error replying to tweet by {tweet_author}")
@@ -115,17 +116,17 @@ class XBot:
         else:
             self.logger.warning(f"Failed to open reply dialog for {tweet_author}")
 
-    def cleanup(self):
-        self.browser.close_current_tab()
-        sleep(self.profile_delay)
-
     def run(self):
+        '''It initializes the environment, gets the following list, and then opens each profile in the following and added people lists, interacts with the tweet of each profile, and saves it to the database.'''
+        self.logger.info("Initializing environment for the bot")
         if not self.initialize_environment():
             return  # Exit the method if initialization fails
 
         self.is_running = True
-        self.get_following() 
+        self.logger.info("Getting following list")
+        self.get_following() # Call this to get any new profiles that the user might have followed
         following_list = self.db_manager.get_following_list()
+        self.logger.info("Starting main loop")
         while self.is_running:
             for profile in self.browser.added_people + following_list:
                 if not self.is_running:
@@ -141,6 +142,7 @@ class XBot:
             
             if not self.is_running:
                 break
+        self.logger.info("Main loop finished")
 
     def delete_replies(self):
         """Invokes the delete_all_replies function"""
@@ -156,6 +158,7 @@ class XBot:
         self.gui_callback("Attempt to delete all likes completed.")
 
     def stop_bot(self):
+        self.logger.info("Stopping bot")
         self.is_running = False
         if hasattr(self, 'browser'):
             self.browser.close_browser()
