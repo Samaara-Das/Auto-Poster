@@ -84,15 +84,13 @@ class TwitterBotGUI:
         self.status_label = ttk.Label(left_frame, text="")
         self.status_label.pack(pady=10)
 
-        # People to reply to list (existing list)
+        # People you're following label
         self.following_label = ttk.Label(middle_frame, text="People you're following: 0")
         self.following_label.pack(pady=10)
         
-        # Frame for existing list
+        # People list 
         list_frame = ttk.Frame(middle_frame)
         list_frame.pack(fill=tk.BOTH, expand=True)
-
-        # People list 
         columns = ("name", "see_tweet", "reply")
         self.reply_list = ttk.Treeview(list_frame, columns=columns, show="headings", height=20)
         self.reply_list.heading("name", text="Name")
@@ -102,21 +100,18 @@ class TwitterBotGUI:
         self.reply_list.column("see_tweet", width=75, anchor=tk.CENTER)
         self.reply_list.column("reply", width=75, anchor=tk.CENTER)
         self.reply_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # Scrollbar for the list
+        self.reply_list.bind("<Double-1>", self.toggle_radio_button)
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.reply_list.yview)
         scrollbar.pack(side=tk.RIGHT, fill="y")
         self.reply_list.configure(yscrollcommand=scrollbar.set)
 
-        # New list label
+        # Added people label
         self.added_people_label = ttk.Label(right_frame, text="Added People: 0")
         self.added_people_label.pack(pady=10)
 
-        # Frame for new list
+        # Added people list
         new_list_frame = ttk.Frame(right_frame)
         new_list_frame.pack(fill=tk.BOTH, expand=True)
-
-        # New list (updated with See Tweet and Reply columns)
         columns = ("name", "see_tweet", "reply")
         self.added_people_list = ttk.Treeview(new_list_frame, columns=columns, show="headings", height=20)
         self.added_people_list.heading("name", text="Name")
@@ -126,31 +121,26 @@ class TwitterBotGUI:
         self.added_people_list.column("see_tweet", width=75, anchor=tk.CENTER)
         self.added_people_list.column("reply", width=75, anchor=tk.CENTER)
         self.added_people_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # Scrollbar for the new list
         new_scrollbar = ttk.Scrollbar(new_list_frame, orient="vertical", command=self.added_people_list.yview)
         new_scrollbar.pack(side=tk.RIGHT, fill="y")
         self.added_people_list.configure(yscrollcommand=new_scrollbar.set)
+        self.added_people_list.bind("<Double-1>", self.toggle_added_people_radio_button)
 
-        # Add Delete button under the Added People list
+        # Delete button under the Added People list
         self.delete_button = ttk.Button(right_frame, text="Delete", command=self.delete_person)
         self.delete_button.pack(pady=10)
         self.update_delete_button_state()
 
-        # Add button (moved below the new list)
+        # Add button under the Added People list
         ttk.Button(right_frame, text="Add", command=self.add_person).pack(pady=10)
-
-        # Bind double-click event to toggle radio buttons for both lists
-        self.reply_list.bind("<Double-1>", self.toggle_radio_button)
-        self.added_people_list.bind("<Double-1>", self.toggle_added_people_radio_button)
 
         # Get following button
         ttk.Button(middle_frame, text="Get Following", command=self.get_following).pack(pady=10)
 
-        # Add Fill Fields button
+        # Fill Fields button
         ttk.Button(left_frame, text="Fill Fields", command=self.fill_fields).pack(pady=10)
 
-        # Add Delete All Replies and Delete All Likes buttons
+        # Delete All Replies and Delete All Likes buttons
         ttk.Button(left_frame, text="Delete All Replies", command=self.delete_replies).pack(pady=5)
         ttk.Button(left_frame, text="Delete All Likes", command=self.delete_likes).pack(pady=5)
 
@@ -192,8 +182,6 @@ class TwitterBotGUI:
             return
         
         self.logger.info("Starting bot")
-        # Start the bot in a separate thread
-        self.bot.init_credentials(username, password, email)
         self.bot.content = messages
         self.is_bot_running = True 
         self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
@@ -539,7 +527,10 @@ class TwitterBotGUI:
             self.logger.error(f"Failed to load following profiles: {e}")
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    twitter_bot_gui = TwitterBotGUI(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        twitter_bot_gui = TwitterBotGUI(root)
+        root.mainloop()
+    except Exception as e:
+        print(f"An error occurred while starting the GUI: {e}")
 
