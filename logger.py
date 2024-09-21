@@ -3,7 +3,6 @@ This is for setting up a logger for the application. Any file can use this to cr
 This was done to avoid repetition of code.
 '''
 
-import logging
 from logging import getLogger, FileHandler, StreamHandler, Formatter, DEBUG, INFO, WARNING, ERROR, CRITICAL
 import sys
 

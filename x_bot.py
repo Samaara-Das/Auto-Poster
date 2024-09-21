@@ -1,7 +1,7 @@
 from database_manager import DatabaseManager
 from x_controller import XController, VerificationRequiredException, rest
 from time import sleep
-from delete_reactions import delete_all_replies, delete_all_likes
+from utils import delete_all_replies, delete_all_likes
 from logger import logger
 import threading
 
@@ -11,9 +11,7 @@ class XBot:
         self.db_manager = DatabaseManager()
         self.browser = XController()
         self.get_following_lock = threading.Lock()
-        self.max_retries = 3
         self.retry_delay = 5
-        self.profile_delay = 2
         self.username = ''
         self.password = ''
         self.email = ''
@@ -49,7 +47,7 @@ class XBot:
         with self.get_following_lock:
             self.browser.go_to_following(self.username)
             self.browser.get_following()
-            self.gui_callback("update_following_list", self.db_manager.get_following_list())
+            self.gui_callback("update_following_list", self.browser.following)
 
     def interact_with_tweet(self, profile):
         '''This method opens the profile page of the person passed in, scrolls to the latest tweet, likes the tweet, and replies to it if it's allowed. The tweet is then saved to the database.'''
@@ -123,12 +121,9 @@ class XBot:
             return  # Exit the method if initialization fails
 
         self.is_running = True
-        self.logger.info("Getting following list")
-        self.get_following() # Call this to get any new profiles that the user might have followed
-        following_list = self.db_manager.get_following_list()
         self.logger.info("Starting main loop")
         while self.is_running:
-            for profile in self.browser.added_people + following_list:
+            for profile in self.browser.added_people + self.browser.following:
                 if not self.is_running:
                     break
                 try:

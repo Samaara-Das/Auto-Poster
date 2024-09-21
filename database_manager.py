@@ -65,7 +65,7 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Failed to save profile. Error: {str(e)}")
 
-    def is_profile_in_collection(self, link: str):
+    def is_profile_in_following(self, link: str):
         '''This checks if a profile is in the following collection in MongoDB'''
         try:
             existing_profile = self.following_collection.find_one({'link': link})
@@ -77,9 +77,23 @@ class DatabaseManager:
             self.logger.error(f"Failed to check if profile is in collection. Error: {str(e)}")
 
     def get_following_list(self):
-        '''This returns a list of all the profiles in the following collection in MongoDB'''
+        '''
+        This method retrieves a list of all profiles from the 'following' collection in MongoDB.
+        
+        It performs the following actions:
+        1. Queries the 'following' collection in MongoDB.
+        2. Returns this list of profiles.
+
+        If an exception occurs during this process:
+        - The error is logged.
+        - An empty list is returned.
+
+        Returns:
+        - A list of dictionaries, where each dictionary represents a profile with 'username', 'name', 'link', and 'reply' fields.
+        - An empty list if an error occurs.
+        '''
         try:
-            following_list = list(self.following_collection.find({}, {'_id': 0, 'username': 1, 'name': 1, 'link': 1, 'reply': 1}))
+            following_list = list(self.following_collection.find({}))
             return following_list
         except Exception as e:
             self.logger.error(f"Failed to get following list. Error: {str(e)}")
@@ -97,7 +111,7 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Failed to save added profile. Error: {str(e)}")
 
-    def get_added_profiles(self):
+    def get_added_list(self):
         '''Retrieves all profiles from the added collection.'''
         try:
             added_profiles = list(self.added_collection.find({}, {'_id': 0}))
