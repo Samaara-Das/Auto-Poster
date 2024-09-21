@@ -473,7 +473,7 @@ class TwitterBotGUI:
     def load_added_profiles(self):
         self.logger.info("Loading added profiles from MongoDB")
         try:
-            added_profiles = self.bot.db_manager.get_added_profiles()
+            added_profiles = self.bot.browser.added_people
             for profile in added_profiles:
                 self.added_people_list.insert("", "end", values=(
                     profile['name'],
@@ -526,8 +526,7 @@ class TwitterBotGUI:
     def load_following_profiles(self):
         '''Loads profiles from the following collection in MongoDB and populates the Following list in the GUI'''
         try:
-            following_list = self.bot.db_manager.get_following_list()
-            self.bot.browser.following = following_list
+            following_list = self.bot.browser.following
             for profile in following_list:
                 self.reply_list.insert("", "end", values=(
                     profile['name'],

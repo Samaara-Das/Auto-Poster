@@ -1,0 +1,3 @@
+database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.21.24 19:16:58
+database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.21.24 19:16:58
+__main__.py load_added_profiles() INFO: Loading added profiles from MongoDB 09.21.24 19:16:58

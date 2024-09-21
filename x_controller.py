@@ -10,7 +10,6 @@ from database_manager import DatabaseManager
 from os import getenv
 from dotenv import load_dotenv
 from time import sleep
-import json
 from logger import logger, clear_log_file
 import random
 import functools
@@ -48,9 +47,8 @@ class XController:
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
         self.db_manager = DatabaseManager()
-        self.processed_profiles = set() # Always return an empty set when the program starts
-        self.following = []
-        self.added_people = []
+        self.following = self.db_manager.get_following_list()
+        self.added_people = self.db_manager.get_added_list()
 
     def initialize_chrome_driver(self):
         '''This method initializes the Chrome driver and creates a `driver` attribute for the class'''
@@ -246,10 +244,11 @@ class XController:
             self.logger.info(f"Scraped {len(self.following)} profile links")
             
             for profile in self.following:
-                if not self.db_manager.is_profile_in_collection(profile['link']): # add data of a profile if it's not already in MongoDB
-                    self.scrape_profile_data(profile['link'])
+                if not self.db_manager.is_profile_in_following(profile['link']): # add data of a profile if it's not already in MongoDB
+                    self.following.append(self.scrape_profile_data(profile['link']))
 
             return True
+
         except TimeoutException:
             self.logger.warning("The page might not have loaded properly.")
             return False
