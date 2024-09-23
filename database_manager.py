@@ -89,7 +89,7 @@ class DatabaseManager:
         - An empty list is returned.
 
         Returns:
-        - A list of dictionaries, where each dictionary represents a profile with 'username', 'name', 'link', and 'reply' fields.
+        - A list of dictionaries, where each dictionary represents a profile.
         - An empty list if an error occurs.
         '''
         try:
@@ -112,9 +112,23 @@ class DatabaseManager:
             self.logger.error(f"Failed to save added profile. Error: {str(e)}")
 
     def get_added_list(self):
-        '''Retrieves all profiles from the added collection.'''
+        '''
+        This method retrieves a list of all profiles from the 'added' collection in MongoDB.
+        
+        It performs the following actions:
+        1. Queries the 'added' collection in MongoDB.
+        2. Returns this list of profiles.
+
+        If an exception occurs during this process:
+        - The error is logged.
+        - An empty list is returned.
+
+        Returns:
+        - A list of dictionaries, where each dictionary represents a profile.
+        - An empty list if an error occurs.
+        '''
         try:
-            added_profiles = list(self.added_collection.find({}, {'_id': 0}))
+            added_profiles = list(self.added_collection.find({}))
             self.logger.info(f"Retrieved {len(added_profiles)} added profiles")
             return added_profiles
         except Exception as e:
