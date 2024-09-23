@@ -33,31 +33,34 @@ class TwitterBotGUI:
         self.logger = logger(__name__)
         self.logger.info("Initializing TwitterBotGUI")
 
-        # Create a frame for the main content
-        main_frame = ttk.Frame(master)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Create a Notebook for tabs
+        notebook = ttk.Notebook(master)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Create left, middle, and right frames
-        left_frame = ttk.Frame(main_frame)
-        middle_frame = ttk.Frame(main_frame)
-        right_frame = ttk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        middle_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(10, 0))
-        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(10, 0))
+        # Create frames for each tab
+        settings_frame = ttk.Frame(notebook)         # Renamed from credentials_frame
+        bot_targets_frame = ttk.Frame(notebook)            # Combined following and added people
+        auto_follow_frame = ttk.Frame(notebook)            # New blank tab
 
+        # Add tabs to the notebook
+        notebook.add(settings_frame, text="Settings")  # Renamed tab name
+        notebook.add(bot_targets_frame, text="Bot Targets")        # Combined lists into one tab
+        notebook.add(auto_follow_frame, text="Auto Follow")        # Added blank tab
+
+        ### Settings Tab ###
         # Username input
-        ttk.Label(left_frame, text="X Username:").pack(pady=10)
-        self.username_entry = ttk.Entry(left_frame)
+        ttk.Label(settings_frame, text="X Username:").pack(pady=10)
+        self.username_entry = ttk.Entry(settings_frame)
         self.username_entry.pack()
 
         # Email input
-        ttk.Label(left_frame, text="Email:").pack(pady=10)
-        self.email_entry = ttk.Entry(left_frame)
+        ttk.Label(settings_frame, text="Email:").pack(pady=10)
+        self.email_entry = ttk.Entry(settings_frame)
         self.email_entry.pack()
 
         # Password input
-        ttk.Label(left_frame, text="X Password:").pack(pady=(10, 5))
-        password_frame = ttk.Frame(left_frame)
+        ttk.Label(settings_frame, text="X Password:").pack(pady=(10, 5))
+        password_frame = ttk.Frame(settings_frame)
         password_frame.pack(pady=(0, 10))
         self.password_entry = ttk.Entry(password_frame, show="*", width=20)
         self.password_entry.pack(side=tk.LEFT)
@@ -68,33 +71,49 @@ class TwitterBotGUI:
         self.show_password_button.pack(side=tk.LEFT, padx=(5, 0))
 
         # Message input
-        ttk.Label(left_frame, text="Your tweet:").pack(pady=10)
-        self.message_box = scrolledtext.ScrolledText(left_frame, width=40, height=10)
+        ttk.Label(settings_frame, text="Your tweet:").pack(pady=10)
+        self.message_box = scrolledtext.ScrolledText(settings_frame, width=40, height=10)
         self.message_box.pack(pady=10)
 
         # Start button
-        self.start_button = ttk.Button(left_frame, text="Start Bot", command=self.start_bot)
+        self.start_button = ttk.Button(settings_frame, text="Start Bot", command=self.start_bot)
         self.start_button.pack(pady=10)
 
         # Stop button
-        self.stop_button = ttk.Button(left_frame, text="Stop Bot", command=self.stop_bot, state=tk.DISABLED)
+        self.stop_button = ttk.Button(settings_frame, text="Stop Bot", command=self.stop_bot, state=tk.DISABLED)
         self.stop_button.pack(pady=10)
 
         # Status label
-        self.status_label = ttk.Label(left_frame, text="")
+        self.status_label = ttk.Label(settings_frame, text="")
         self.status_label.pack(pady=10)
 
-        # People to reply to list (existing list)
-        self.following_label = ttk.Label(middle_frame, text="People you're following: 0")
+        # Fill Fields button
+        ttk.Button(settings_frame, text="Fill Fields", command=self.fill_fields).pack(pady=10)
+
+        # Delete All Replies and Likes buttons
+        ttk.Button(settings_frame, text="Delete All Replies", command=self.delete_replies).pack(pady=5)
+        ttk.Button(settings_frame, text="Delete All Likes", command=self.delete_likes).pack(pady=5)
+
+        ### Bot Targets Tab ###
+        # Frame for Lists
+        lists_container = ttk.Frame(bot_targets_frame)
+        lists_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Following List Section
+        following_section = ttk.LabelFrame(lists_container, text="Following List")
+        following_section.pack(fill=tk.BOTH, expand=True, side=tk.LEFT, padx=(0, 10))
+
+        # People you're following label
+        self.following_label = ttk.Label(following_section, text="People you're following: 0")
         self.following_label.pack(pady=10)
-        
-        # Frame for existing list
-        list_frame = ttk.Frame(middle_frame)
+
+        # Frame for following list
+        list_frame = ttk.Frame(following_section)
         list_frame.pack(fill=tk.BOTH, expand=True)
 
         # People list 
         columns = ("name", "see_tweet", "reply")
-        self.reply_list = ttk.Treeview(list_frame, columns=columns, show="headings", height=20)
+        self.reply_list = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
         self.reply_list.heading("name", text="Name")
         self.reply_list.heading("see_tweet", text="See Tweet")
         self.reply_list.heading("reply", text="Reply")
@@ -103,22 +122,29 @@ class TwitterBotGUI:
         self.reply_list.column("reply", width=75, anchor=tk.CENTER)
         self.reply_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Scrollbar for the list
+        # Scrollbar for the following list
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.reply_list.yview)
         scrollbar.pack(side=tk.RIGHT, fill="y")
         self.reply_list.configure(yscrollcommand=scrollbar.set)
 
-        # New list label
-        self.added_people_label = ttk.Label(right_frame, text="Added People: 0")
+        # Get following button
+        ttk.Button(following_section, text="Get Following", command=self.get_following).pack(pady=10)
+
+        # Added People Section
+        added_section = ttk.LabelFrame(lists_container, text="Added People")
+        added_section.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+
+        # Added People label
+        self.added_people_label = ttk.Label(added_section, text="Added People: 0")
         self.added_people_label.pack(pady=10)
 
-        # Frame for new list
-        new_list_frame = ttk.Frame(right_frame)
+        # Frame for added people list
+        new_list_frame = ttk.Frame(added_section)
         new_list_frame.pack(fill=tk.BOTH, expand=True)
 
-        # New list (updated with See Tweet and Reply columns)
+        # Added people list
         columns = ("name", "see_tweet", "reply")
-        self.added_people_list = ttk.Treeview(new_list_frame, columns=columns, show="headings", height=20)
+        self.added_people_list = ttk.Treeview(new_list_frame, columns=columns, show="headings", height=15)
         self.added_people_list.heading("name", text="Name")
         self.added_people_list.heading("see_tweet", text="See Tweet")
         self.added_people_list.heading("reply", text="Reply")
@@ -127,32 +153,21 @@ class TwitterBotGUI:
         self.added_people_list.column("reply", width=75, anchor=tk.CENTER)
         self.added_people_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Scrollbar for the new list
+        # Scrollbar for the added people list
         new_scrollbar = ttk.Scrollbar(new_list_frame, orient="vertical", command=self.added_people_list.yview)
         new_scrollbar.pack(side=tk.RIGHT, fill="y")
         self.added_people_list.configure(yscrollcommand=new_scrollbar.set)
 
-        # Add Delete button under the Added People list
-        self.delete_button = ttk.Button(right_frame, text="Delete", command=self.delete_person)
+        # Add/Delete buttons in Added People tab
+        self.delete_button = ttk.Button(added_section, text="Delete", command=self.delete_person)
         self.delete_button.pack(pady=10)
         self.update_delete_button_state()
 
-        # Add button (moved below the new list)
-        ttk.Button(right_frame, text="Add", command=self.add_person).pack(pady=10)
+        ttk.Button(added_section, text="Add", command=self.add_person).pack(pady=10)
 
         # Bind double-click event to toggle radio buttons for both lists
         self.reply_list.bind("<Double-1>", self.toggle_radio_button)
         self.added_people_list.bind("<Double-1>", self.toggle_added_people_radio_button)
-
-        # Get following button
-        ttk.Button(middle_frame, text="Get Following", command=self.get_following).pack(pady=10)
-
-        # Add Fill Fields button
-        ttk.Button(left_frame, text="Fill Fields", command=self.fill_fields).pack(pady=10)
-
-        # Add Delete All Replies and Delete All Likes buttons
-        ttk.Button(left_frame, text="Delete All Replies", command=self.delete_replies).pack(pady=5)
-        ttk.Button(left_frame, text="Delete All Likes", command=self.delete_likes).pack(pady=5)
 
         # Create XBot instance with GUI callback
         self.bot = XBot(self.update_gui)
