@@ -1,0 +1,8 @@
+database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.24.24 11:16:34
+database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.24.24 11:16:34
+__main__.py load_added_profiles() INFO: Loading added profiles from MongoDB 09.24.24 11:16:34
+__main__.py load_added_profiles() INFO: Successfully loaded 3 added profiles 09.24.24 11:16:34
+__main__.py load_following_profiles() INFO: Loaded following profiles into the GUI 09.24.24 11:16:34
+__main__.py __init__() INFO: TwitterBotGUI initialization complete 09.24.24 11:16:34
+__main__.py fill_fields() INFO: Attempting to fill fields with default data from the SQL database 09.24.24 11:16:37
+__main__.py fill_fields() INFO: Fields filled successfully with default data 09.24.24 11:16:37

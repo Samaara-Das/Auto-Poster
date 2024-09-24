@@ -8,16 +8,11 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
 from database_manager import DatabaseManager
 from os import getenv
-from dotenv import load_dotenv
 from time import sleep
 from logger import logger, clear_log_file
 import random
 import functools
 
-# Load environment variables
-load_dotenv()
-
-# Replace the hardcoded values with environment variables
 CHROMEDRIVER_EXE_PATH = getenv('CHROMEDRIVER_EXE_PATH')
 CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
 

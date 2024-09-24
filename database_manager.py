@@ -1,12 +1,8 @@
 from os import getenv
-from dotenv import load_dotenv
 from urllib.parse import urlparse
 from datetime import datetime
 from pymongo.mongo_client import MongoClient
 from logger import logger
-
-# Load environment variables
-load_dotenv()
 
 class DatabaseManager:
     def __init__(self):
