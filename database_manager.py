@@ -100,7 +100,7 @@ class DatabaseManager:
             return []
 
     def save_added_profile(self, data: dict):
-        '''Saves a profile to the added collection.'''
+        '''Saves a profile to the added collection. If the profile already exists in the collection, the profile will be updated with the new data'''
         try:
             self.added_collection.update_one(
                 {'link': data['link']},
@@ -163,3 +163,19 @@ class DatabaseManager:
             self.logger.error(f"Failed to delete added profile. Error: {str(e)}")
             return False
 
+    def delete_following_profile(self, link: str) -> bool:
+        '''
+        Deletes a profile from the following collection based on the link.
+        Returns True if deletion was successful, False otherwise.
+        '''
+        try:
+            result = self.following_collection.delete_one({'link': link})
+            if result.deleted_count > 0:
+                self.logger.info(f"Successfully deleted profile with link: {link}")
+                return True
+            else:
+                self.logger.warning(f"No profile found with link: {link}")
+                return False
+        except Exception as e:
+            self.logger.error(f"Failed to delete following profile. Error: {str(e)}")
+            return False

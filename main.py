@@ -27,40 +27,54 @@ class TwitterBotGUI:
         self.master = master
         self.is_bot_running = False
         master.title("Auto Poster")
-        master.geometry("1100x700")
+        master.geometry("700x750")
 
         # Initialize logger
         self.logger = logger(__name__)
         self.logger.info("Initializing TwitterBotGUI")
 
-        # Create a Notebook for tabs
+        # Create the tabs
         notebook = ttk.Notebook(master)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Create frames for each tab
-        settings_frame = ttk.Frame(notebook)         # Renamed from credentials_frame
-        bot_targets_frame = ttk.Frame(notebook)            # Combined following and added people
-        auto_follow_frame = ttk.Frame(notebook)            # New blank tab
+        settings_frame = ttk.Frame(notebook)
+        bot_targets_frame = ttk.Frame(notebook)
+        auto_follow_frame = ttk.Frame(notebook)
 
         # Add tabs to the notebook
-        notebook.add(settings_frame, text="Settings")  # Renamed tab name
-        notebook.add(bot_targets_frame, text="Bot Targets")        # Combined lists into one tab
-        notebook.add(auto_follow_frame, text="Auto Follow")        # Added blank tab
+        notebook.add(settings_frame, text="Settings")
+        notebook.add(bot_targets_frame, text="Bot Targets")
+        notebook.add(auto_follow_frame, text="Auto Follow")
 
-        ### Settings Tab ###
+        self.create_settings_tab(settings_frame)
+        self.create_bot_targets_tab(bot_targets_frame)
+
+        # Create XBot instance with GUI callback
+        self.bot = XBot(self.update_gui)
+
+        # Load added profiles from MongoDB and populate the Added People list
+        self.load_added_profiles()
+
+        # Load following profiles and populate the Following list
+        self.load_following_profiles()
+
+        self.logger.info("TwitterBotGUI initialization complete")
+
+    def create_settings_tab(self, frame):
         # Username input
-        ttk.Label(settings_frame, text="X Username:").pack(pady=10)
-        self.username_entry = ttk.Entry(settings_frame)
+        ttk.Label(frame, text="X Username:").pack(pady=10)
+        self.username_entry = ttk.Entry(frame)
         self.username_entry.pack()
 
         # Email input
-        ttk.Label(settings_frame, text="Email:").pack(pady=10)
-        self.email_entry = ttk.Entry(settings_frame)
+        ttk.Label(frame, text="Email:").pack(pady=10)
+        self.email_entry = ttk.Entry(frame)
         self.email_entry.pack()
 
         # Password input
-        ttk.Label(settings_frame, text="X Password:").pack(pady=(10, 5))
-        password_frame = ttk.Frame(settings_frame)
+        ttk.Label(frame, text="X Password:").pack(pady=(10, 5))
+        password_frame = ttk.Frame(frame)
         password_frame.pack(pady=(0, 10))
         self.password_entry = ttk.Entry(password_frame, show="*", width=20)
         self.password_entry.pack(side=tk.LEFT)
@@ -71,36 +85,49 @@ class TwitterBotGUI:
         self.show_password_button.pack(side=tk.LEFT, padx=(5, 0))
 
         # Message input
-        ttk.Label(settings_frame, text="Your tweet:").pack(pady=10)
-        self.message_box = scrolledtext.ScrolledText(settings_frame, width=40, height=10)
+        ttk.Label(frame, text="Your tweet:").pack(pady=10)
+        self.message_box = scrolledtext.ScrolledText(frame, width=40, height=10)
         self.message_box.pack(pady=10)
 
         # Start button
-        self.start_button = ttk.Button(settings_frame, text="Start Bot", command=self.start_bot)
+        self.start_button = ttk.Button(frame, text="Start Bot", command=self.start_bot)
         self.start_button.pack(pady=10)
 
         # Stop button
-        self.stop_button = ttk.Button(settings_frame, text="Stop Bot", command=self.stop_bot, state=tk.DISABLED)
+        self.stop_button = ttk.Button(frame, text="Stop Bot", command=self.stop_bot, state=tk.DISABLED)
         self.stop_button.pack(pady=10)
 
         # Status label
-        self.status_label = ttk.Label(settings_frame, text="")
+        self.status_label = ttk.Label(frame, text="")
         self.status_label.pack(pady=10)
 
         # Fill Fields button
-        ttk.Button(settings_frame, text="Fill Fields", command=self.fill_fields).pack(pady=10)
+        ttk.Button(frame, text="Fill Fields", command=self.fill_fields).pack(pady=10)
 
         # Delete All Replies and Likes buttons
-        ttk.Button(settings_frame, text="Delete All Replies", command=self.delete_replies).pack(pady=5)
-        ttk.Button(settings_frame, text="Delete All Likes", command=self.delete_likes).pack(pady=5)
+        ttk.Button(frame, text="Delete All Replies", command=self.delete_replies).pack(pady=5)
+        ttk.Button(frame, text="Delete All Likes", command=self.delete_likes).pack(pady=5)
 
-        ### Bot Targets Tab ###
+    def toggle_password_visibility(self):
+        '''
+        If the password is visible, it is hidden. Otherwise, if it is hidden, it is shown.
+        '''
+        self.logger.info("Toggling password visibility")
+        if self.show_password_var.get():
+            self.password_entry.config(show="")
+        else:
+            self.password_entry.config(show="*")
+
+    def create_bot_targets_tab(self, frame):
         # Frame for Lists
-        lists_container = ttk.Frame(bot_targets_frame)
+        lists_container = ttk.Frame(frame)
         lists_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Following List Section
-        following_section = ttk.LabelFrame(lists_container, text="Following List")
+        self.create_following_section(lists_container)
+        self.create_added_people_section(lists_container)
+
+    def create_following_section(self, container):
+        following_section = ttk.LabelFrame(container, text="Following List")
         following_section.pack(fill=tk.BOTH, expand=True, side=tk.LEFT, padx=(0, 10))
 
         # People you're following label
@@ -130,8 +157,8 @@ class TwitterBotGUI:
         # Get following button
         ttk.Button(following_section, text="Get Following", command=self.get_following).pack(pady=10)
 
-        # Added People Section
-        added_section = ttk.LabelFrame(lists_container, text="Added People")
+    def create_added_people_section(self, container):
+        added_section = ttk.LabelFrame(container, text="Added People")
         added_section.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
         # Added People label
@@ -168,27 +195,6 @@ class TwitterBotGUI:
         # Bind double-click event to toggle radio buttons for both lists
         self.reply_list.bind("<Double-1>", self.toggle_radio_button)
         self.added_people_list.bind("<Double-1>", self.toggle_added_people_radio_button)
-
-        # Create XBot instance with GUI callback
-        self.bot = XBot(self.update_gui)
-
-        # Load added profiles from MongoDB and populate the Added People list
-        self.load_added_profiles()
-
-        # Load following profiles from MongoDB at startup
-        self.load_following_profiles()
-
-        self.logger.info("TwitterBotGUI initialization complete")
-
-    def toggle_password_visibility(self):
-        '''
-        If the password is visible, it is hidden. Otherwise, if it is hidden, it is shown.
-        '''
-        self.logger.info("Toggling password visibility")
-        if self.show_password_var.get():
-            self.password_entry.config(show="")
-        else:
-            self.password_entry.config(show="*")
 
     @update_credentials
     def start_bot(self):
@@ -306,7 +312,7 @@ class TwitterBotGUI:
                 messagebox.showerror("Error", f"@{username} does not exist.")
 
     def update_added_people_count(self):
-        count = len(self.added_people_list.get_children())
+        count = len(self.bot.browser.added_people)
         self.added_people_label.config(text=f"Added People: {count}")
 
     def check_username_exists(self, username):
@@ -351,7 +357,7 @@ class TwitterBotGUI:
             messagebox.showerror("Error", "Please enter your X username, password and email.")
             return False
         return True
-
+    
     @update_credentials
     def get_following(self):
         if not self.is_credentials_valid():

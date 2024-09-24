@@ -1,6 +1,0 @@
-database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.23.24 18:18:55
-database_manager.py get_added_list() INFO: Retrieved 3 added profiles 09.23.24 18:18:55
-__main__.py load_added_profiles() INFO: Loading added profiles from MongoDB 09.23.24 18:18:55
-__main__.py load_added_profiles() INFO: Successfully loaded 3 added profiles 09.23.24 18:18:55
-__main__.py load_following_profiles() INFO: Loaded following profiles into the GUI 09.23.24 18:18:55
-__main__.py __init__() INFO: TwitterBotGUI initialization complete 09.23.24 18:18:55

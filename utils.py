@@ -10,7 +10,7 @@ import sqlite3
 
 def delete_all_replies(driver, logger, username: str):
     """
-    Deletes all replies made by the user. Sometimes, this doesn't work.
+    Deletes all replies made by the user. (Not functional)
     
     :param driver: The Selenium WebDriver instance
     :param logger: The logger instance
@@ -39,7 +39,7 @@ def delete_all_replies(driver, logger, username: str):
                 logger.info(f"Found reply")
 
                 # Click on the menu button (three dots)
-                menu_button = reply.find_element(By.XPATH, './/button[@aria-label="More"]')
+                menu_button = reply.find_element(By.XPATH, '//button[@aria-label="More"]')
                 menu_button.click()
                 logger.info("Clicked on the menu button")
 
@@ -76,7 +76,7 @@ def delete_all_replies(driver, logger, username: str):
 
 def delete_all_likes(driver, logger, username):
     """
-    Attempts to delete all likes for a given user.
+    Attempts to delete all likes for a given user. (Not functional)
 
     NOTE: This function currently works incorrectly. Only the first tweet gets unliked and not the rest.
 

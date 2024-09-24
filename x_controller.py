@@ -210,23 +210,21 @@ class XController:
             # Find all the profile links
             last_height = self.driver.execute_script("return document.body.scrollHeight")
             scroll_pause_time = 0.7  
+            latest_following = []
             while True:
                 # Scroll down gradually
                 self.logger.info('Scrolling down to load more profiles')
                 self.driver.execute_script("window.scrollBy(0, 600);")
                 sleep(scroll_pause_time)
 
-                # Find all profile links
+                # Scrape data of all profiles that the user is following
                 profile_elements = timeline_div.find_elements(By.XPATH, './/div[@class="css-175oi2r r-1adg3ll r-1ny4l3l"]')
                 
                 self.logger.info(f'Scraping data from {len(profile_elements)} profiles')
                 for element in profile_elements:
                     link = element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
-                    name = element.find_element(By.XPATH, './/span[@class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3"]').text
-                    profile_info = {"link": link, "name": name} 
-                    
-                    if profile_info not in self.following:
-                        self.following.append(profile_info)
+                    if link not in latest_following:
+                        latest_following.append(link)
 
                 # Calculate new scroll height and compare with last scroll height
                 new_height = self.driver.execute_script("return document.body.scrollHeight")
@@ -241,10 +239,11 @@ class XController:
                         break
                 last_height = new_height
 
-            self.logger.info(f"Scraped {len(self.following)} profile links")
+            self.logger.info(f"Scraped {len(latest_following)} profiles")
             
-            for profile in self.following:
-                if not self.db_manager.is_profile_in_following(profile['link']): # add data of a profile if it's not already in MongoDB
+            # store a profile that the user is following if it's not already in MongoDB
+            for profile in latest_following:
+                if not self.db_manager.is_profile_in_following(profile['link']): 
                     self.following.append(self.scrape_profile_data(profile['link']))
 
             return True
