@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from x_bot import XBot
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
@@ -8,10 +7,8 @@ import sqlite3
 import functools
 from logger import logger
 
-# Load environment variables
-load_dotenv()
-
 def update_credentials(func):
+    '''This sets the username, password and email for self.bot to what the user has entered in the GUI'''
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         username = self.username_entry.get()
@@ -49,6 +46,7 @@ class TwitterBotGUI:
 
         self.create_settings_tab(settings_frame)
         self.create_bot_targets_tab(bot_targets_frame)
+        self.create_auto_follow_tab(auto_follow_frame)  # Added this line
 
         # Create XBot instance with GUI callback
         self.bot = XBot(self.update_gui)
@@ -195,6 +193,37 @@ class TwitterBotGUI:
         # Bind double-click event to toggle radio buttons for both lists
         self.reply_list.bind("<Double-1>", self.toggle_radio_button)
         self.added_people_list.bind("<Double-1>", self.toggle_added_people_radio_button)
+
+    def create_auto_follow_tab(self, frame):
+        """
+        Sets up the Auto Follow tab with Start and Stop buttons.
+        """
+        self.logger.info("Creating Auto Follow tab")
+        
+        # Create a frame within the Auto Follow tab for better layout management
+        auto_follow_container = ttk.Frame(frame)
+        auto_follow_container.pack(padx=20, pady=20, fill=tk.BOTH, expand=True)
+
+        # Start Auto Follow Button
+        self.start_auto_follow_button = ttk.Button(
+            auto_follow_container, 
+            text="Start Auto Follow", 
+            command=self.start_auto_follow
+        )
+        self.start_auto_follow_button.pack(pady=10, fill=tk.X)
+
+        # Stop Auto Follow Button
+        self.stop_auto_follow_button = ttk.Button(
+            auto_follow_container, 
+            text="Stop Auto Follow", 
+            command=self.stop_auto_follow, 
+            state=tk.DISABLED  # Initially disabled
+        )
+        self.stop_auto_follow_button.pack(pady=10, fill=tk.X)
+
+        # Status Label
+        self.auto_follow_status_label = ttk.Label(auto_follow_container, text="Auto Follow is not running.")
+        self.auto_follow_status_label.pack(pady=10)
 
     @update_credentials
     def start_bot(self):
@@ -555,6 +584,64 @@ class TwitterBotGUI:
             self.logger.info("Loaded following profiles into the GUI")
         except Exception as e:
             self.logger.error(f"Failed to load following profiles: {e}")
+
+    def start_auto_follow(self):
+        """
+        Handler for starting the auto follow process.
+        """
+        if not self.is_credentials_valid():
+            return
+
+        if self.is_bot_running:
+            self.logger.warning("Bot is already running.")
+            messagebox.showwarning("Warning", "Bot is already running.")
+            return
+
+        self.logger.info("Starting Auto Follow process")
+        self.auto_follow_status_label.config(text="Auto Follow is running...")
+        self.start_auto_follow_button.config(state=tk.DISABLED)
+        self.stop_auto_follow_button.config(state=tk.NORMAL)
+
+        # Start the auto follow process in a separate thread
+        self.auto_follow_thread = threading.Thread(target=self.run_auto_follow, daemon=True)
+        self.auto_follow_thread.start()
+
+    def run_auto_follow(self):
+        """
+        The method that contains the logic for auto following.
+        """
+        try:
+            # Replace the following line with your auto follow logic
+            self.bot.start_auto_following()
+            self.logger.info("Auto Follow process completed successfully.")
+            self.update_auto_follow_status("Auto Follow completed.")
+        except Exception as e:
+            self.logger.exception(f"An error occurred during Auto Follow: {e}")
+            self.update_auto_follow_status(f"Error: {e}")
+
+    def stop_auto_follow(self):
+        """
+        Handler for stopping the auto follow process.
+        """
+        if hasattr(self, 'auto_follow_thread') and self.auto_follow_thread.is_alive():
+            self.logger.info("Stopping Auto Follow process")
+            self.bot.stop_auto_following()  # Ensure your bot has a method to stop the process
+            self.auto_follow_thread.join(timeout=5)
+            self.update_auto_follow_status("Auto Follow has been stopped.")
+            self.start_auto_follow_button.config(state=tk.NORMAL)
+            self.stop_auto_follow_button.config(state=tk.DISABLED)
+        else:
+            self.logger.warning("Auto Follow process is not running.")
+            messagebox.showwarning("Warning", "Auto Follow process is not running.")
+
+    def update_auto_follow_status(self, message):
+        """
+        Updates the status label in the Auto Follow tab.
+        """
+        self.auto_follow_status_label.config(text=message)
+        if "Error" in message or "stopped" in message.lower() or "completed" in message.lower():
+            self.start_auto_follow_button.config(state=tk.NORMAL)
+            self.stop_auto_follow_button.config(state=tk.DISABLED)
 
 if __name__ == '__main__':
     root = tk.Tk()

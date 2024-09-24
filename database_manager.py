@@ -1,4 +1,4 @@
-from os import getenv
+from os import environ
 from urllib.parse import urlparse
 from datetime import datetime
 from pymongo.mongo_client import MongoClient
@@ -6,7 +6,7 @@ from logger import logger
 
 class DatabaseManager:
     def __init__(self):
-        pwd = getenv('MONGO_PWD')
+        pwd = environ.get('MONGODB_PWD')
         connection_string = f"mongodb+srv://sammy:{pwd}@cluster1.565lfln.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1"
         self.client = MongoClient(connection_string)
         self.db = self.client['auto_poster']

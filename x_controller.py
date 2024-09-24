@@ -7,14 +7,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
 from database_manager import DatabaseManager
-from os import getenv
+from os import environ
 from time import sleep
 from logger import logger, clear_log_file
 import random
 import functools
 
-CHROMEDRIVER_EXE_PATH = getenv('CHROMEDRIVER_EXE_PATH')
-CHROME_PROFILES_PATH = getenv('CHROME_PROFILES_PATH')
+CHROMEDRIVER_EXE_PATH = environ.get('CHROMEDRIVER_EXE_PATH')
+CHROME_PROFILES_PATH = environ.get('CHROME_PROFILES_PATH')
 
 class VerificationRequiredException(Exception):
     """Custom exception for when verification is required during login."""
