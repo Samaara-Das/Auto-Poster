@@ -6,31 +6,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
-from database_manager import DatabaseManager
-from os import environ
+from app.database.mongo_manager import MongoManager
+from app.configuration.configuration import Config
 from time import sleep
-from logger import logger, clear_log_file
-import random
-import functools
-
-CHROMEDRIVER_EXE_PATH = environ.get('CHROMEDRIVER_EXE_PATH')
-CHROME_PROFILES_PATH = environ.get('CHROME_PROFILES_PATH')
+import app.decorators.decorators as decorators
+from app.logger.logger import logger, clear_log_file
 
 class VerificationRequiredException(Exception):
     """Custom exception for when verification is required during login."""
     pass
-
-def rest(func):
-    '''This decorator adds a random sleep time between 1 and 2 seconds after the decorated function is called. This was created to reduce the likelihood of the Retry button appearing on X'''
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        sleep_time = random.uniform(1, 2.5)
-        print(f'Sleeping for {sleep_time} seconds')
-        sleep(sleep_time)
-        return result
-    return wrapper
-
 
 class XController:
 
@@ -41,7 +25,7 @@ class XController:
         self.driver.maximize_window()
         self.window_handles = self.driver.window_handles
         self.logger = logger(__name__)
-        self.db_manager = DatabaseManager()
+        self.db_manager = MongoManager()
         self.following = self.db_manager.get_following_list()
         self.added_people = self.db_manager.get_added_list()
 
@@ -52,7 +36,7 @@ class XController:
         chrome_options.add_argument('--profile-directory=Profile 11') # This profile is for the fake account
         
         # Use a unique user data directory for this project
-        chrome_options.add_argument(f"--user-data-dir={CHROME_PROFILES_PATH}/AutoPoster")
+        chrome_options.add_argument(f"--user-data-dir={Config.CHROME_PROFILES_PATH}/AutoPoster")
         
         # Specify a different port for Chrome DevTools
         chrome_options.add_argument("--remote-debugging-port=9223")
@@ -62,7 +46,7 @@ class XController:
         chrome_options.add_argument("--disable-dev-shm-usage")
         
         # Use a service object to set additional options
-        service = ChromeService(executable_path=CHROMEDRIVER_EXE_PATH)
+        service = ChromeService(executable_path=Config.CHROMEDRIVER_EXE_PATH)
 
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         
@@ -101,7 +85,7 @@ class XController:
             self.logger.exception(f'Cannot open this url: {url}')
             return False 
 
-    @rest
+    @decorators.rest
     def sign_in(self, username, password, email):
         '''This method checks if the user is logged in to X, if not, it will sign in to the specified account'''
         self.driver.get('https://x.com/login') # go to X
@@ -122,7 +106,7 @@ class XController:
             self.logger.info('User is not logged in to X')
             self._login(username, password, email)
 
-    @rest
+    @decorators.rest
     def _logout(self):
         '''Helper method to log out the current user'''
         self.logger.info('Logging out the current user')
@@ -138,7 +122,7 @@ class XController:
         login_button = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//a[@data-testid="loginButton"]')))
         login_button.click()
 
-    @rest
+    @decorators.rest
     def _login(self, username, password, email):
         '''Helper method to perform the actual login process'''
         try:
@@ -183,6 +167,21 @@ class XController:
         except Exception as e:
             self.logger.exception(f'Failed to log in to X. Error: {str(e)}')
             raise  # Re-raise the exception to be caught by the calling method
+
+    def update_added_people(self):
+        '''This method fetches the latest data from the 'added' collection in MongoDB and updates `self.added_people`'''
+        self.added_people = self.db_manager.get_added_list()
+
+    def update_following(self):
+        '''This method fetches the latest data from the 'following' collection in MongoDB and updates `self.following`'''
+        self.following = self.db_manager.get_following_list()
+
+    def remove_added_person(self, link: str):
+        '''This method removes a profile with `link` from `self.added_people`'''
+        for person in self.added_people:
+            if person['link'] == link:
+                self.added_people.remove(person)
+                break
 
     def go_to_following(self, username: str):
         '''This method goes to the following page of the specified user'''
@@ -237,9 +236,13 @@ class XController:
             self.logger.info(f"Scraped {len(latest_following)} profiles")
             
             # store a profile that the user is following if it's not already in MongoDB
-            for profile in latest_following:
-                if not self.db_manager.is_profile_in_following(profile['link']): 
-                    self.following.append(self.scrape_profile_data(profile['link']))
+            for profile_link in latest_following:
+                if not self.db_manager.is_profile_in_following(profile_link): 
+                    data = self.scrape_profile_data(profile_link)
+                    self.following.append(data)
+                    self.db_manager.save_profile(data)
+
+            # Note: The logic for deleting a profile from the following collection if the user has unfollowed that profile is not implemented because papa told me to keep all the profiles that the user has ever followed.
 
             return True
 
@@ -250,7 +253,7 @@ class XController:
             self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
             return False
     
-    @rest
+    @decorators.rest
     def scrape_profile_data(self, link) -> dict:
         """
         Scrapes and returns data of an X profile.
@@ -323,10 +326,8 @@ class XController:
                 'reply': True,  # Default to True when adding a new profile
             }
 
-            # Save the profile data to the database
-            self.db_manager.save_profile(profile_data)
-
             # Return the profile data for further use
+            self.close_current_tab()
             return profile_data
 
         except TimeoutException as te:
@@ -351,7 +352,7 @@ class XController:
             self.logger.info(f"Optional field not found for xpath: {xpath}")
             return ''
 
-    @rest
+    @decorators.rest
     def _fetch_followers_you_follow(self):
         """
         Fetches the list of followers you follow.
@@ -486,7 +487,7 @@ class XController:
             self.logger.error("Could not find tweet author")
             return None
 
-    @rest
+    @decorators.rest
     def like_tweet(self, tweet_element):
         """
         Checks if the given tweet is liked. If not, it likes the tweet.
@@ -535,7 +536,7 @@ class XController:
             self.logger.exception(f"Failed to click the reply button. Error: {str(e)}")
             return False
 
-    @rest
+    @decorators.rest
     def type_reply(self, reply_text):
         """
         Types the given text into the reply box.
@@ -551,7 +552,7 @@ class XController:
             self.logger.exception(f"Failed to type reply. Error: {str(e)}")
             return False
 
-    @rest
+    @decorators.rest
     def send_reply(self):
         """
         Clicks the send button for the reply.
@@ -570,7 +571,7 @@ class XController:
             self.logger.exception(f"Failed to click reply send button. Error: {str(e)}")
             return False
 
-    @rest
+    @decorators.rest
     def close_current_tab(self):
         """
         Closes the current tab and switches back to the previous one.
@@ -596,3 +597,39 @@ class XController:
             self.logger.info("Browser closed successfully")
         except Exception as e:
             self.logger.exception(f"Error closing browser: {str(e)}")
+
+    def handle_locked_account(self):
+        """
+        Handles the case where the "Your account has been locked" page is displayed. This page can be accessed by this link: https://x.com/account/access. This method is incomplete.
+        """
+        try:
+            # Check if the "Your account has been locked" page is displayed
+            locked_message = WebDriverWait(self.driver, 3).until(
+                EC.presence_of_element_located((By.XPATH, '//div[contains(text(), "Your account has been locked.")]'))
+            )
+            
+            if locked_message:
+                self.logger.info("Account locked page detected")
+                
+                # Find and click the Verify button
+                start_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//input[@type="submit"]'))
+                )
+                start_button.click()
+                self.logger.info("Clicked Verify button")
+                
+                # Wait for and click the Send email button
+                send_email_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//input[@type="submit" and @value="Send email"]'))
+                )
+                send_email_button.click()
+                self.logger.info("Clicked Send email button")
+
+                return True
+            
+        except TimeoutException:
+            self.logger.warning("Account locked page not detected or elements not found")
+        except Exception as e:
+            self.logger.exception(f"Error handling locked account: {str(e)}")
+        
+        return False

@@ -5,8 +5,9 @@ This was done to avoid repetition of code.
 
 from logging import getLogger, FileHandler, StreamHandler, Formatter, DEBUG, INFO, WARNING, ERROR, CRITICAL
 import sys
+from app.configuration.configuration import Config
 
-def logger(logger_name, logger_level=INFO, file='app_log.log'):
+def logger(logger_name, logger_level=INFO):
     '''This sets up a logger and returns it'''
     logger = getLogger(logger_name)
     logger.setLevel(logger_level)
@@ -14,7 +15,7 @@ def logger(logger_name, logger_level=INFO, file='app_log.log'):
     date_format = "%m.%d.%y %H:%M:%S"
     formatter = Formatter('%(name)s.py %(funcName)s() %(levelname)s: %(message)s %(asctime)s', datefmt=date_format)
 
-    file_handler = FileHandler(file)
+    file_handler = FileHandler(Config.LOG_FILE)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
@@ -26,8 +27,9 @@ def logger(logger_name, logger_level=INFO, file='app_log.log'):
     return logger
 
 
-def clear_log_file(file='app_log.log'):
+def clear_log_file():
     '''This function clears the contents of the specified log file'''
+    file = Config.LOG_FILE
     try:
         with open(file, 'w') as log_file:
             log_file.write('')

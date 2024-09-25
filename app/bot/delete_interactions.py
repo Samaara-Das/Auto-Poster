@@ -6,7 +6,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from time import sleep
-import sqlite3
 
 def delete_all_replies(driver, logger, username: str):
     """
@@ -126,35 +125,8 @@ def delete_all_likes(driver, logger, username):
                 break
 
         logger.info(f"Unliking process completed. Total unliked: {unliked_count}")
+        return True
 
     except Exception as e:
         logger.exception(f"An error occurred while unliking tweets: {str(e)}")
-
-def setup_database():
-    '''This function sets up a sqlite database with hardcoded user information to start the Auto Poster app. This is meant to be run only once to initialize the user_data.db file. This automatically fills up the user credentials in the GUI to save time.'''
-    conn = sqlite3.connect('user_data.db')
-    cursor = conn.cursor()
-
-
-    # Create the user_data table with the new tweet_text field
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_data (
-        id INTEGER PRIMARY KEY,
-        username TEXT NOT NULL,
-        email TEXT NOT NULL,
-        password TEXT NOT NULL,
-        tweet_text TEXT NOT NULL
-    )
-    ''')
-
-    # Insert hardcoded data including the tweet text
-    cursor.execute('''
-    INSERT OR REPLACE INTO user_data (id, username, email, password, tweet_text)
-    VALUES (1, 'fakerfaker680', 'fakerfaker680@gmail.com', '1304Sammy#', 'cool')
-    ''')
-
-    conn.commit()
-    conn.close()
-
-    print("Database setup complete.")
-
+        return False

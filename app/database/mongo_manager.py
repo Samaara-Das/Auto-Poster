@@ -1,19 +1,25 @@
-from os import environ
 from urllib.parse import urlparse
 from datetime import datetime
 from pymongo.mongo_client import MongoClient
-from logger import logger
+from app.logger.logger import logger
+from app.configuration.configuration import Config
 
-class DatabaseManager:
+class MongoManager:
     def __init__(self):
-        pwd = environ.get('MONGODB_PWD')
-        connection_string = f"mongodb+srv://sammy:{pwd}@cluster1.565lfln.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1"
-        self.client = MongoClient(connection_string)
+        self.client = MongoClient(Config.DATABASE_URI)
         self.db = self.client['auto_poster']
         self.tweets_collection = self.db['tweets']
         self.following_collection = self.db['following']
         self.added_collection = self.db['added']
         self.logger = logger('database_manager')
+
+    def delete_profile(self, username: str, collection_name: str):
+        '''This deletes a profile from a collection based on the username'''
+        try:
+            self.db[collection_name].delete_one({'username': username})
+            self.logger.info(f"Successfully deleted profile with username: {username} from {collection_name}")
+        except Exception as e:
+            self.logger.error(f"Failed to delete profile from {collection_name}. Error: {str(e)}")
 
     def delete_docs_in_collection(self, collection_name):
         '''This deletes all the documents in a collection'''
@@ -142,6 +148,17 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Failed to update added profile. Error: {str(e)}")
 
+    def update_following_profile(self, link: str, reply: bool):
+        '''Updates the reply field of a profile in the following collection.'''
+        try:
+            self.following_collection.update_one(
+                {'link': link},
+                {'$set': {'reply': reply}}
+            )
+            self.logger.info(f"Updated reply status for profile: {link} to {reply}")
+        except Exception as e:
+            self.logger.error(f"Failed to update following profile. Error: {str(e)}")
+
     def delete_added_profile(self, link: str) -> bool:
         '''
         Deletes a profile from the added collection based on the link.
@@ -175,3 +192,4 @@ class DatabaseManager:
         except Exception as e:
             self.logger.error(f"Failed to delete following profile. Error: {str(e)}")
             return False
+        
