@@ -64,7 +64,7 @@ class AutoFollowTab:
             textvariable=self.follow_at_time_var, 
             width=20,
             validate="key",
-            validatecommand=(self.frame.register(self.validate_number_input), '%P')
+            validatecommand=(self.frame.register(self.validate_follow_at_time_input), '%P')
         )
         self.follow_at_time_entry.pack(side=tk.LEFT, padx=(5, 0))
 
@@ -121,6 +121,24 @@ class AutoFollowTab:
         delete_keyword_button = ttk.Button(keywords_input_frame, text="Delete", command=self.remove_keyword)
         delete_keyword_button.pack(side=tk.LEFT, padx=(5, 0))
 
+    def are_settings_valid(self):
+        '''This method checks if the follow at a time and follow in 24 hours are valid'''
+        # Check if follow_at_time is valid and not empty
+        follow_at_time = self.follow_at_time_var.get().strip()
+        if not follow_at_time or not self.validate_follow_at_time_input(follow_at_time):
+            self.logger.warning("Invalid or empty 'Follow at a time' value")
+            messagebox.showerror("Error", "Please enter a valid 'Follow at a time' value.")
+            return False
+
+        # Check if follow_in_24_hours is valid and not empty
+        follow_in_24_hours = self.follow_in_24_hours_var.get().strip()
+        if not follow_in_24_hours or not self.validate_follow_in_24_hours_input(follow_in_24_hours):
+            self.logger.warning("Invalid or empty 'Follow in 24 hours' value")
+            messagebox.showerror("Error", "Please enter a valid 'Follow in 24 hours' value.")
+            return False
+
+        return True
+
     def add_keyword(self):
         keyword = self.keyword_entry.get().strip()
         if keyword and keyword not in self.keywords_listbox.get(0, tk.END):
@@ -143,18 +161,20 @@ class AutoFollowTab:
         """
         Handler for starting the auto follow process.
         """
-        if not self.is_credentials_valid():
+        if not self.bot.is_credentials_valid(): # check if the credentials are valid just in case they have to be used to sign in to X
+            messagebox.showwarning("Warning", "Credentials are not valid. Go to Settings tab to set them up.")
             return
-
-        if self.bot.is_running:
-            self.logger.warning("Bot is already running.")
-            messagebox.showwarning("Warning", "Bot is already running.")
+        
+        if not self.are_settings_valid():
             return
 
         self.logger.info("Starting Auto Follow process")
         self.auto_follow_status_label.config(text="Auto Follow is running...")
         self.start_auto_follow_button.config(state=tk.DISABLED)
         self.stop_auto_follow_button.config(state=tk.NORMAL)
+
+        # TODO: Open a new browser window
+
 
         # Start the auto follow process in a separate thread
         self.auto_follow_thread = threading.Thread(target=self.run_auto_follow, daemon=True)
@@ -165,7 +185,10 @@ class AutoFollowTab:
         The method that contains the logic for auto following.
         """
         try:
-            self.bot.start_auto_following()
+            total_follow_count = self.follow_in_24_hours_var.get()
+            keywords = self.keywords_listbox.get(0, tk.END)
+            follow_at_time = self.follow_at_time_var.get()
+            self.bot.start_auto_following(total_follow_count=total_follow_count, keywords=keywords, follow_at_time=follow_at_time)
             self.logger.info("Auto Follow process completed successfully.")
             self.update_auto_follow_status("Auto Follow completed.")
         except Exception as e:
@@ -200,7 +223,7 @@ class AutoFollowTab:
         # Implementation to validate user credentials before starting auto follow
         return True
 
-    def validate_number_input(self, P: str):
+    def validate_follow_at_time_input(self, P: str):
         """
         Validates that the input is a non-empty string of digits and does not exceed 100.
 

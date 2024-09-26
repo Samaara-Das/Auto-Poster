@@ -103,8 +103,14 @@ class SettingsTab:
             self.password_entry.config(show="*")
 
     def start_bot(self):
-        if not self.is_credentials_valid() or not self.is_message_valid():
-            self.logger.warning("Invalid credentials provided")
+        if not self.bot.is_credentials_valid():
+            self.logger.warning(f"Invalid credentials provided. username: {self.bot.username}, password: {self.bot.password}, email: {self.bot.email}")
+            messagebox.showerror("Error", "Please enter your X username, password and email.")
+            return
+        
+        if not self.is_message_valid():
+            self.logger.warning("Invalid message provided")
+            messagebox.showerror("Error", "Please enter your tweet.")
             return
 
         self.logger.info("Starting bot")
@@ -139,22 +145,6 @@ class SettingsTab:
         else:
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
-
-    def is_credentials_valid(self):
-        '''
-        This function checks if the username, password and email are valid.
-        '''
-        self.logger.info("Checking if credentials are valid")
-        username = self.username_var.get()
-        password = self.password_var.get()
-        email = self.email_var.get()
-
-        if not username or not password or not email:
-            self.logger.warning(f"Invalid credentials provided. username: {username}, password: {password}, email: {email}")
-            messagebox.showerror("Error", "Please enter your X username, password and email.")
-            return False
-        
-        return True
 
     def is_message_valid(self):
         '''

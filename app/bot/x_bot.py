@@ -25,6 +25,15 @@ class XBot:
         self.email = email
         self.logger.info(f"Initialized credentials for {self.username}.")
 
+    def is_credentials_valid(self):
+        '''This method checks if the email, username and password are valid'''
+        self.logger.info("Checking if credentials are valid")
+        if not self.username or not self.password or not self.email:
+            self.logger.warning(f"Invalid credentials provided. username: {self.username}, password: {self.password}, email: {self.email}")
+            return False
+        self.logger.info("Credentials are valid")
+        return True
+
     def sign_in(self):
         '''This method signs in to X and goes to the following page of the specified user. It also updates the GUI with a list of the people that the user is following and displays error messages if any occur'''
         try:
@@ -109,7 +118,7 @@ class XBot:
         self.logger.info("Initializing environment for the bot")
         if not self.sign_in():
             return
-        self.get_following()
+        self.get_following() # get the latest list of people that the user is following
 
         self.is_running = True
         self.logger.info("Starting main loop")
@@ -152,4 +161,9 @@ class XBot:
         if hasattr(self, 'browser'):
             self.browser.close_browser()
         self.logger.info("Bot finished running.")
+
+    def start_auto_following(self, total_follow_count, keywords, follow_at_time):
+        """Starts the auto follow process"""
+        pass
+
 
