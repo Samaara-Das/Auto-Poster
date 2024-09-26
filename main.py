@@ -1,9 +1,5 @@
 from app.bot.x_bot import XBot
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
-from tkinter import simpledialog
-import threading
-import sqlite3
 import app.gui.main_window as main_window
 import app.logger.logger as logger
 

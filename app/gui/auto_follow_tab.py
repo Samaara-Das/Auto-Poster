@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
@@ -12,11 +11,22 @@ class AutoFollowTab:
         self.create_widgets()
 
     def create_widgets(self):
-        # Status label
+        self.create_status_label()
+        self.create_control_buttons()
+        self.create_follow_inputs()
+        self.create_keywords_section()
+
+    def create_status_label(self):
+        """
+        Creates and packs the status label.
+        """
         self.auto_follow_status_label = ttk.Label(self.frame, text="Auto Follow is not running.")
         self.auto_follow_status_label.pack(pady=20)
 
-        # Start and Stop buttons
+    def create_control_buttons(self):
+        """
+        Creates and packs the Start and Stop buttons.
+        """
         self.start_auto_follow_button = ttk.Button(
             self.frame,
             text="Start Auto Follow",
@@ -31,6 +41,103 @@ class AutoFollowTab:
             state=tk.DISABLED
         )
         self.stop_auto_follow_button.pack(pady=10)
+
+    def create_follow_inputs(self):
+        """
+        Creates and packs the follow-related input fields.
+        """
+        self.create_follow_at_time_input()
+        self.create_follow_in_24_hours_input()
+
+    def create_follow_at_time_input(self):
+        """
+        Creates and packs the 'Follow at a time' input section.
+        """
+        follow_at_time_frame = ttk.Frame(self.frame)
+        follow_at_time_frame.pack(pady=10)
+        
+        ttk.Label(follow_at_time_frame, text="(Max 100) Follow at a time:").pack(side=tk.LEFT)
+        
+        self.follow_at_time_var = tk.StringVar()
+        self.follow_at_time_entry = ttk.Entry(
+            follow_at_time_frame, 
+            textvariable=self.follow_at_time_var, 
+            width=20,
+            validate="key",
+            validatecommand=(self.frame.register(self.validate_number_input), '%P')
+        )
+        self.follow_at_time_entry.pack(side=tk.LEFT, padx=(5, 0))
+
+        self.follow_at_time_warning = ttk.Label(follow_at_time_frame, text="", foreground="red")
+        self.follow_at_time_warning.pack(side=tk.LEFT, padx=(5, 0))
+
+    def create_follow_in_24_hours_input(self):
+        """
+        Creates and packs the 'Follow in 24 hours' input section.
+        """
+        follow_in_24_hours_frame = ttk.Frame(self.frame)
+        follow_in_24_hours_frame.pack(pady=10)
+        
+        ttk.Label(follow_in_24_hours_frame, text="(Max 400) Follow in 24 hours:").pack(side=tk.LEFT)
+        
+        self.follow_in_24_hours_var = tk.StringVar()
+        self.follow_in_24_hours_entry = ttk.Entry(
+            follow_in_24_hours_frame, 
+            textvariable=self.follow_in_24_hours_var, 
+            width=20,
+            validate="key",
+            validatecommand=(self.frame.register(self.validate_follow_in_24_hours_input), '%P')
+        )
+        self.follow_in_24_hours_entry.pack(side=tk.LEFT, padx=(5, 0))
+
+        self.follow_in_24_hours_warning = ttk.Label(follow_in_24_hours_frame, text="", foreground="red")
+        self.follow_in_24_hours_warning.pack(side=tk.LEFT, padx=(5, 0))
+
+    def create_keywords_section(self):
+        """
+        Creates and packs the keywords management section.
+        """
+        keywords_frame = ttk.Frame(self.frame)
+        keywords_frame.pack(pady=(10, 0))
+
+        ttk.Label(keywords_frame, text="Keywords:").pack(anchor=tk.W)
+
+        self.keywords_listbox = tk.Listbox(keywords_frame, height=5, width=30)
+        self.keywords_listbox.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
+
+        keywords_scrollbar = ttk.Scrollbar(keywords_frame, orient=tk.VERTICAL, command=self.keywords_listbox.yview)
+        keywords_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.keywords_listbox.config(yscrollcommand=keywords_scrollbar.set)
+
+        keywords_input_frame = ttk.Frame(keywords_frame)
+        keywords_input_frame.pack(fill=tk.X, pady=(5, 0))
+
+        self.keyword_entry = ttk.Entry(keywords_input_frame, width=20)
+        self.keyword_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+        add_keyword_button = ttk.Button(keywords_input_frame, text="Add", command=self.add_keyword)
+        add_keyword_button.pack(side=tk.LEFT, padx=(5, 0))
+
+        delete_keyword_button = ttk.Button(keywords_input_frame, text="Delete", command=self.remove_keyword)
+        delete_keyword_button.pack(side=tk.LEFT, padx=(5, 0))
+
+    def add_keyword(self):
+        keyword = self.keyword_entry.get().strip()
+        if keyword and keyword not in self.keywords_listbox.get(0, tk.END):
+            self.keywords_listbox.insert(tk.END, keyword)
+            self.keyword_entry.delete(0, tk.END)
+        elif not keyword:
+            messagebox.showwarning("Warning", "Please enter a keyword.")
+        else:
+            messagebox.showwarning("Warning", "This keyword already exists in the list.")
+
+    def remove_keyword(self):
+        selected_indices = self.keywords_listbox.curselection()
+        if selected_indices:
+            for index in reversed(selected_indices):
+                self.keywords_listbox.delete(index)
+        else:
+            messagebox.showwarning("Warning", "Please select a keyword to remove.")
 
     def start_auto_follow(self):
         """
@@ -92,3 +199,51 @@ class AutoFollowTab:
     def is_credentials_valid(self):
         # Implementation to validate user credentials before starting auto follow
         return True
+
+    def validate_number_input(self, P: str):
+        """
+        Validates that the input is a non-empty string of digits and does not exceed 100.
+
+        Args:
+            P (str): The proposed new value of the entry widget.
+
+        Returns:
+            bool: True if valid (empty or digits only and <= 100), False otherwise.
+        """
+        if P.isdigit():
+            if int(P) <= 100:
+                self.follow_at_time_warning.config(text="")
+                return True
+            else:
+                self.follow_at_time_warning.config(text="Max 100 allowed.")
+                return False
+        elif P == "":
+            self.follow_at_time_warning.config(text="")
+            return True
+        else:
+            self.follow_at_time_warning.config(text="Invalid input.")
+            return False
+
+    def validate_follow_in_24_hours_input(self, P: str) -> bool:
+        """
+        Validates that the input is a non-empty string of digits and does not exceed 400.
+
+        Args:
+            P (str): The proposed new value of the entry widget.
+
+        Returns:
+            bool: True if valid (empty or digits only and <= 400), False otherwise.
+        """
+        if P.isdigit():
+            if int(P) <= 400:
+                self.follow_in_24_hours_warning.config(text="")
+                return True
+            else:
+                self.follow_in_24_hours_warning.config(text="Max 400 allowed.")
+                return False
+        elif P == "":
+            self.follow_in_24_hours_warning.config(text="")
+            return True
+        else:
+            self.follow_in_24_hours_warning.config(text="Invalid input.")
+            return False
