@@ -162,8 +162,4 @@ class XBot:
             self.browser.close_browser()
         self.logger.info("Bot finished running.")
 
-    def start_auto_following(self, total_follow_count, keywords, follow_at_time):
-        """Starts the auto follow process"""
-        pass
-
 

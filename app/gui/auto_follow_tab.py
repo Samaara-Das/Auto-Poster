@@ -1,12 +1,16 @@
 import tkinter as tk
+import app.bot.auto_follow as auto_follow
 from tkinter import ttk, messagebox
 import threading
+
+from app.configuration.configuration import Config
 
 class AutoFollowTab:
     def __init__(self, frame, logger, bot):
         self.frame = frame
         self.logger = logger
         self.bot = bot
+        self.auto_follow = auto_follow.AutoFollow(bot)
 
         self.create_widgets()
 
@@ -46,52 +50,52 @@ class AutoFollowTab:
         """
         Creates and packs the follow-related input fields.
         """
-        self.create_follow_at_time_input()
-        self.create_follow_in_24_hours_input()
+        self.create_follow_at_once_input()
+        self.create_follow_in_time_span_input()
 
-    def create_follow_at_time_input(self):
+    def create_follow_at_once_input(self):
         """
         Creates and packs the 'Follow at a time' input section.
         """
-        follow_at_time_frame = ttk.Frame(self.frame)
-        follow_at_time_frame.pack(pady=10)
+        follow_at_once_frame = ttk.Frame(self.frame)
+        follow_at_once_frame.pack(pady=10)
         
-        ttk.Label(follow_at_time_frame, text="(Max 100) Follow at a time:").pack(side=tk.LEFT)
+        ttk.Label(follow_at_once_frame, text="(Max 100) Maximum people to follow at once:").pack(side=tk.LEFT)
         
-        self.follow_at_time_var = tk.StringVar()
-        self.follow_at_time_entry = ttk.Entry(
-            follow_at_time_frame, 
-            textvariable=self.follow_at_time_var, 
+        self.follow_at_once_var = tk.StringVar()
+        self.follow_at_once_entry = ttk.Entry(
+            follow_at_once_frame, 
+            textvariable=self.follow_at_once_var, 
             width=20,
             validate="key",
-            validatecommand=(self.frame.register(self.validate_follow_at_time_input), '%P')
+            validatecommand=(self.frame.register(self.validate_follow_at_once_input), '%P')
         )
-        self.follow_at_time_entry.pack(side=tk.LEFT, padx=(5, 0))
+        self.follow_at_once_entry.pack(side=tk.LEFT, padx=(5, 0))
 
-        self.follow_at_time_warning = ttk.Label(follow_at_time_frame, text="", foreground="red")
-        self.follow_at_time_warning.pack(side=tk.LEFT, padx=(5, 0))
+        self.follow_at_once_warning = ttk.Label(follow_at_once_frame, text="", foreground="red")
+        self.follow_at_once_warning.pack(side=tk.LEFT, padx=(5, 0))
 
-    def create_follow_in_24_hours_input(self):
+    def create_follow_in_time_span_input(self):
         """
         Creates and packs the 'Follow in 24 hours' input section.
         """
-        follow_in_24_hours_frame = ttk.Frame(self.frame)
-        follow_in_24_hours_frame.pack(pady=10)
+        follow_in_time_span_frame = ttk.Frame(self.frame)
+        follow_in_time_span_frame.pack(pady=10)
         
-        ttk.Label(follow_in_24_hours_frame, text="(Max 400) Follow in 24 hours:").pack(side=tk.LEFT)
+        ttk.Label(follow_in_time_span_frame, text="(Max 400) Maximum people to follow in 24 hrs:").pack(side=tk.LEFT)
         
-        self.follow_in_24_hours_var = tk.StringVar()
-        self.follow_in_24_hours_entry = ttk.Entry(
-            follow_in_24_hours_frame, 
-            textvariable=self.follow_in_24_hours_var, 
+        self.follow_in_time_span_var = tk.StringVar()
+        self.follow_in_time_span_entry = ttk.Entry(
+            follow_in_time_span_frame, 
+            textvariable=self.follow_in_time_span_var, 
             width=20,
             validate="key",
-            validatecommand=(self.frame.register(self.validate_follow_in_24_hours_input), '%P')
+            validatecommand=(self.frame.register(self.validate_follow_in_time_span_input), '%P')
         )
-        self.follow_in_24_hours_entry.pack(side=tk.LEFT, padx=(5, 0))
+        self.follow_in_time_span_entry.pack(side=tk.LEFT, padx=(5, 0))
 
-        self.follow_in_24_hours_warning = ttk.Label(follow_in_24_hours_frame, text="", foreground="red")
-        self.follow_in_24_hours_warning.pack(side=tk.LEFT, padx=(5, 0))
+        self.follow_in_time_span_warning = ttk.Label(follow_in_time_span_frame, text="", foreground="red")
+        self.follow_in_time_span_warning.pack(side=tk.LEFT, padx=(5, 0))
 
     def create_keywords_section(self):
         """
@@ -122,24 +126,31 @@ class AutoFollowTab:
         delete_keyword_button.pack(side=tk.LEFT, padx=(5, 0))
 
     def are_settings_valid(self):
-        '''This method checks if the follow at a time and follow in 24 hours are valid'''
-        # Check if follow_at_time is valid and not empty
-        follow_at_time = self.follow_at_time_var.get().strip()
-        if not follow_at_time or not self.validate_follow_at_time_input(follow_at_time):
+        '''This method checks if the follow_at_once and follow_in_time_span inputs are valid'''
+        # Check if follow_at_once is valid and not empty
+        follow_at_once = self.follow_at_once_var.get().strip()
+        if not follow_at_once or not self.validate_follow_at_once_input(follow_at_once):
             self.logger.warning("Invalid or empty 'Follow at a time' value")
             messagebox.showerror("Error", "Please enter a valid 'Follow at a time' value.")
             return False
 
-        # Check if follow_in_24_hours is valid and not empty
-        follow_in_24_hours = self.follow_in_24_hours_var.get().strip()
-        if not follow_in_24_hours or not self.validate_follow_in_24_hours_input(follow_in_24_hours):
+        # Check if follow_in_time_span is valid and not empty
+        follow_in_time_span = self.follow_in_time_span_var.get().strip()
+        if not follow_in_time_span or not self.validate_follow_in_time_span_input(follow_in_time_span):
             self.logger.warning("Invalid or empty 'Follow in 24 hours' value")
             messagebox.showerror("Error", "Please enter a valid 'Follow in 24 hours' value.")
+            return False
+        
+        # Check if the follow_at_once is not greater than the follow_in_time_span
+        if int(follow_at_once) > int(follow_in_time_span):
+            self.logger.warning("'Follow at a time' is greater than 'Follow in 24 hours'")
+            messagebox.showerror("Error", "Please enter a valid 'Follow at a time' value which is less than 'Follow in 24 hours' value.")
             return False
 
         return True
 
     def add_keyword(self):
+        """Adds a new keyword to the keywords list."""
         keyword = self.keyword_entry.get().strip()
         if keyword and keyword not in self.keywords_listbox.get(0, tk.END):
             self.keywords_listbox.insert(tk.END, keyword)
@@ -150,6 +161,7 @@ class AutoFollowTab:
             messagebox.showwarning("Warning", "This keyword already exists in the list.")
 
     def remove_keyword(self):
+        """Removes the selected keyword from the keywords list."""
         selected_indices = self.keywords_listbox.curselection()
         if selected_indices:
             for index in reversed(selected_indices):
@@ -168,13 +180,30 @@ class AutoFollowTab:
         if not self.are_settings_valid():
             return
 
+        try:
+            follow_at_once = int(self.follow_at_once_var.get())
+            total_follow_count = int(self.follow_in_time_span_var.get())
+
+            # Calculate required interval to distribute follows evenly over the time span
+            interval = self.auto_follow.calculate_interval(total_follow_count, follow_at_once)
+
+        except ValueError as ve:
+            # Handle errors from calculate_interval such as interval being too short
+            self.logger.warning(f"Interval calculation failed: {ve}")
+            messagebox.showerror("Error", f"{ve}")
+            return
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during interval calculation: {e}")
+            messagebox.showerror("Error", "An unexpected error occurred during interval calculation.")
+            return
+
         self.logger.info("Starting Auto Follow process")
         self.auto_follow_status_label.config(text="Auto Follow is running...")
         self.start_auto_follow_button.config(state=tk.DISABLED)
         self.stop_auto_follow_button.config(state=tk.NORMAL)
 
-        # TODO: Open a new browser window
-
+        # Create a new window to run the auto follow process
+        self.auto_follow.create_new_window()
 
         # Start the auto follow process in a separate thread
         self.auto_follow_thread = threading.Thread(target=self.run_auto_follow, daemon=True)
@@ -185,12 +214,19 @@ class AutoFollowTab:
         The method that contains the logic for auto following.
         """
         try:
-            total_follow_count = self.follow_in_24_hours_var.get()
-            keywords = self.keywords_listbox.get(0, tk.END)
-            follow_at_time = self.follow_at_time_var.get()
-            self.bot.start_auto_following(total_follow_count=total_follow_count, keywords=keywords, follow_at_time=follow_at_time)
+            total_follow_count = int(self.follow_in_time_span_var.get())
+            keywords = list(self.keywords_listbox.get(0, tk.END))
+            follow_at_once = int(self.follow_at_once_var.get())
+            self.auto_follow.start_auto_following(
+                total_follow_count=total_follow_count, 
+                keywords=keywords, 
+                follow_at_once=follow_at_once
+            )
             self.logger.info("Auto Follow process completed successfully.")
             self.update_auto_follow_status("Auto Follow completed.")
+        except ValueError as ve:
+            self.logger.exception(f"Invalid input values: {ve}")
+            self.update_auto_follow_status(f"Error: Invalid input values. Please check your inputs.")
         except Exception as e:
             self.logger.exception(f"An error occurred during Auto Follow: {e}")
             self.update_auto_follow_status(f"Error: {e}")
@@ -201,7 +237,7 @@ class AutoFollowTab:
         """
         if hasattr(self, 'auto_follow_thread') and self.auto_follow_thread.is_alive():
             self.logger.info("Stopping Auto Follow process")
-            self.bot.stop_auto_following()  # Ensure your bot has a method to stop the process
+            self.auto_follow.stop_auto_following()
             self.auto_follow_thread.join(timeout=5)
             self.update_auto_follow_status("Auto Follow has been stopped.")
             self.start_auto_follow_button.config(state=tk.NORMAL)
@@ -219,11 +255,7 @@ class AutoFollowTab:
             self.start_auto_follow_button.config(state=tk.NORMAL)
             self.stop_auto_follow_button.config(state=tk.DISABLED)
 
-    def is_credentials_valid(self):
-        # Implementation to validate user credentials before starting auto follow
-        return True
-
-    def validate_follow_at_time_input(self, P: str):
+    def validate_follow_at_once_input(self, P: str):
         """
         Validates that the input is a non-empty string of digits and does not exceed 100.
 
@@ -235,19 +267,19 @@ class AutoFollowTab:
         """
         if P.isdigit():
             if int(P) <= 100:
-                self.follow_at_time_warning.config(text="")
+                self.follow_at_once_warning.config(text="")
                 return True
             else:
-                self.follow_at_time_warning.config(text="Max 100 allowed.")
+                self.follow_at_once_warning.config(text="Max 100 allowed.")
                 return False
         elif P == "":
-            self.follow_at_time_warning.config(text="")
+            self.follow_at_once_warning.config(text="")
             return True
         else:
-            self.follow_at_time_warning.config(text="Invalid input.")
+            self.follow_at_once_warning.config(text="Invalid input.")
             return False
 
-    def validate_follow_in_24_hours_input(self, P: str) -> bool:
+    def validate_follow_in_time_span_input(self, P: str) -> bool:
         """
         Validates that the input is a non-empty string of digits and does not exceed 400.
 
@@ -259,14 +291,14 @@ class AutoFollowTab:
         """
         if P.isdigit():
             if int(P) <= 400:
-                self.follow_in_24_hours_warning.config(text="")
+                self.follow_in_time_span_warning.config(text="")
                 return True
             else:
-                self.follow_in_24_hours_warning.config(text="Max 400 allowed.")
+                self.follow_in_time_span_warning.config(text="Max 400 allowed.")
                 return False
         elif P == "":
-            self.follow_in_24_hours_warning.config(text="")
+            self.follow_in_time_span_warning.config(text="")
             return True
         else:
-            self.follow_in_24_hours_warning.config(text="Invalid input.")
+            self.follow_in_time_span_warning.config(text="Invalid input.")
             return False
