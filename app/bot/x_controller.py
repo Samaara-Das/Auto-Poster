@@ -1,3 +1,4 @@
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
@@ -252,7 +253,97 @@ class XController:
         except Exception as e:
             self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
             return False
-    
+
+    @decorators.rest
+    def auto_follow(self, keywords, follow_at_once):
+        '''This method automatically follows users based on the given keywords and `follow_at_once` value. It returns the number of profiles followed. It updates '''
+        try:
+            # Make all the keywords lowercase
+            keywords = [keyword.lower() for keyword in keywords]
+
+            # Wait for the profiles in the connect page to load
+            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//button[@data-testid="UserCell"]')))
+            
+            # Selector for bio
+            bio_selector = 'div[class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41 r-1h8ys4a r-1jeg54m"]'
+
+            # Initialize a set to keep track of profiles which have been checked
+            processed_profiles = set()
+
+            # Follow people if the specified keywords are in the profile's bio and the profile 
+            last_height = self.driver.execute_script("return document.body.scrollHeight")
+            scroll_pause_time = 0.7  
+            followed_profiles = 0
+            while True:
+                profiles = self.driver.find_elements(By.XPATH, '//button[@data-testid="UserCell"]')
+                for profile in profiles:
+                    try:
+                        # Extract the profile link as a unique identifier
+                        profile_link = profile.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
+                        
+                        # Skip if already checked
+                        if profile_link in processed_profiles:
+                            continue
+
+                        # Add to processed profiles
+                        processed_profiles.add(profile_link)
+
+                        if followed_profiles >= follow_at_once:
+                            self.logger.info(f"Reached follow_at_once limit of {follow_at_once}")
+                            return followed_profiles
+
+                        try:
+                            bio = profile.find_element(By.CSS_SELECTOR, bio_selector).text.lower()
+                            self.logger.debug(f"Profile bio: {bio}")
+                        except NoSuchElementException:
+                            bio = ""
+                            self.logger.debug("No bio found for this profile.")
+
+                        # Check if any keyword is in bio if the keywords list is not empty
+                        if not keywords or any(f' {keyword} ' in bio for keyword in keywords):
+                            try:
+                                follow_button = profile.find_element(By.XPATH, './/button[contains(@aria-label, "Follow ")]')
+
+                                # If the button isn't displayed, scroll the profile into view
+                                if not follow_button.is_displayed():
+                                    self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", profile)
+                                    sleep(0.5)
+
+                                follow_button.click()
+                                sleep(0.2)  # Short pause after each follow
+                                followed_profiles += 1
+                                self.logger.info(f"Followed profile. Total followed: {followed_profiles}")
+                    
+                            except Exception as e:
+                                self.logger.exception(f"Unexpected error when trying to follow: {e}")
+
+                    except NoSuchElementException:
+                        self.logger.warning("Profile link element not found. Skipping this profile.")
+                        continue
+                    except Exception as e:
+                        self.logger.exception(f"Error processing a profile: {e}")
+                        continue
+
+                # Scroll down to load more profiles
+                self.driver.execute_script("window.scrollBy(0, 500);")
+                sleep(scroll_pause_time)
+
+                # Calculate new scroll height and compare with last scroll height
+                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    self.logger.info("Reached the end of the page or no new profiles loaded.")
+                    break
+                last_height = new_height
+
+            self.logger.info(f"Auto-follow complete. Followed {followed_profiles} profiles.")
+            return followed_profiles
+        except TimeoutException:
+            self.logger.warning('Failed to auto follow because of timeout exception')
+            return followed_profiles
+        except Exception as e:
+            self.logger.exception(f'Failed to auto follow. Error: {str(e)}')
+            return followed_profiles
+
     @decorators.rest
     def scrape_profile_data(self, link) -> dict:
         """

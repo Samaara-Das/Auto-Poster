@@ -130,8 +130,8 @@ class AutoFollowTab:
         # Check if follow_at_once is valid and not empty
         follow_at_once = self.follow_at_once_var.get().strip()
         if not follow_at_once or not self.validate_follow_at_once_input(follow_at_once):
-            self.logger.warning("Invalid or empty 'Follow at a time' value")
-            messagebox.showerror("Error", "Please enter a valid 'Follow at a time' value.")
+            self.logger.warning("Invalid or empty 'Follow at once' value")
+            messagebox.showerror("Error", "Please enter a valid 'Follow at once' value.")
             return False
 
         # Check if follow_in_time_span is valid and not empty
@@ -204,6 +204,7 @@ class AutoFollowTab:
 
         # Create a new window to run the auto follow process
         self.auto_follow.create_new_window()
+        self.auto_follow.sign_in()
 
         # Start the auto follow process in a separate thread
         self.auto_follow_thread = threading.Thread(target=self.run_auto_follow, daemon=True)
@@ -217,7 +218,7 @@ class AutoFollowTab:
             total_follow_count = int(self.follow_in_time_span_var.get())
             keywords = list(self.keywords_listbox.get(0, tk.END))
             follow_at_once = int(self.follow_at_once_var.get())
-            self.auto_follow.start_auto_following(
+            self.auto_follow.schedule_auto_follow_process(
                 total_follow_count=total_follow_count, 
                 keywords=keywords, 
                 follow_at_once=follow_at_once

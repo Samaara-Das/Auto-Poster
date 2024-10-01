@@ -30,6 +30,18 @@ class AutoFollow:
         except Exception as e:
             self.logger.exception(f"Failed to create a new window: {e}")
 
+    def sign_in(self):
+        """Signs in to X if user is logged out."""
+        self.bot.browser.sign_in(self.bot.username, self.bot.password, self.bot.email)
+
+    def open_connect_page(self):
+        """Opens the connect page."""
+        try:
+            self.bot.browser.driver.get('https://x.com/i/connect_people')
+            self.logger.info("Opened the connect page.")
+        except Exception as e:
+            self.logger.exception(f"Failed to open the connect page: {e}")
+
     def calculate_interval(self, total_follow_count, follow_at_once):
         """
         Calculates the interval between each follow batch in seconds,
@@ -78,7 +90,7 @@ class AutoFollow:
         self.logger.debug(f"Final calculated interval: {adjusted_interval} seconds between each batch.")
         return adjusted_interval
 
-    def start_auto_following(self, total_follow_count, keywords, follow_at_once):
+    def schedule_auto_follow_process(self, total_follow_count, keywords, follow_at_once):
         """
         Starts the auto follow process.
         
@@ -126,32 +138,27 @@ class AutoFollow:
 
     def follow_batch(self, follow_at_once, keywords, total_follow_count):
         """
-        Follows a batch of users based on the given keywords.
+        Follows a batch of users based on the given keywords and `follow_at_once` value.
         
         Args:
             follow_at_once (int): Number of users to follow in this batch.
             keywords (list): List of keywords to filter users.
             total_follow_count (int): Total number of users to follow per time span.
         """
-        def is_total_follow_count_reached():
-            if self.follows_done >= total_follow_count:
-                self.logger.info(f"$$$ Reached the total follow count of {total_follow_count} for this time span.")
-                return True
-            return False
-
         try:
-            if is_total_follow_count_reached():
-                return
+            if self.follows_done >= total_follow_count:
+                self.logger.info(f"Reached the total follow count of {total_follow_count} for this time span.")
+                return True
 
-            # Implement the actual follow logic here
-            # For demonstration, we'll simulate the follow action for each person
-            for _ in range(follow_at_once):
-                if is_total_follow_count_reached():
-                    return
-                time.sleep(Config.FOLLOW_DURATION)
-                self.follows_done += 1
+            self.logger.info(f"Starting follow batch of {follow_at_once} users.")
 
-            self.logger.info(f"Followed {follow_at_once} users. Total followed this cycle: {self.follows_done}/{total_follow_count}")
+            # open the connect page
+            self.open_connect_page()
+
+            # follow people
+            followed_profiles = self.bot.browser.auto_follow(keywords, follow_at_once)
+            self.follows_done += followed_profiles
+            self.logger.info(f"Followed {followed_profiles} users. Total followed this cycle: {self.follows_done}/{total_follow_count}")
 
         except Exception as e:
             self.logger.exception(f"Error during follow batch: {e}")

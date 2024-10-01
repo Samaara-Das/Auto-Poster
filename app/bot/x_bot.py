@@ -18,13 +18,6 @@ class XBot:
         self.is_running = False
         self.logger = logger(__name__)
 
-    def init_credentials(self, username, password, email):
-        '''this sets the username, password and email attributes to the values passed in'''
-        self.username = username
-        self.password = password
-        self.email = email
-        self.logger.info(f"Initialized credentials for {self.username}.")
-
     def is_credentials_valid(self):
         '''This method checks if the email, username and password are valid'''
         self.logger.info("Checking if credentials are valid")
