@@ -255,8 +255,8 @@ class XController:
             return False
 
     @decorators.rest
-    def auto_follow(self, keywords, follow_at_once):
-        '''This method automatically follows users based on the given keywords and `follow_at_once` value. It returns the number of profiles followed. It updates '''
+    def auto_follow(self, keywords, follow_at_once, total_follow_count, total_followed):
+        '''This method automatically follows users based on the given keywords and `follow_at_once` value. It returns the number of profiles followed. '''
         try:
             # Make all the keywords lowercase
             keywords = [keyword.lower() for keyword in keywords]
@@ -274,6 +274,7 @@ class XController:
             last_height = self.driver.execute_script("return document.body.scrollHeight")
             scroll_pause_time = 0.7  
             followed_profiles = 0
+            total_followed_profiles = total_followed
             while True:
                 profiles = self.driver.find_elements(By.XPATH, '//button[@data-testid="UserCell"]')
                 for profile in profiles:
@@ -281,17 +282,22 @@ class XController:
                         # Extract the profile link as a unique identifier
                         profile_link = profile.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
                         
-                        # Skip if already checked
+                        # Skip the profile if it's already checked
                         if profile_link in processed_profiles:
                             continue
 
-                        # Add to processed profiles
+                        # Add the profile to processed profiles (this indicates that the profile has been checked)
                         processed_profiles.add(profile_link)
 
-                        if followed_profiles >= follow_at_once:
-                            self.logger.info(f"Reached follow_at_once limit of {follow_at_once}")
+                        if total_followed_profiles >= total_follow_count: # if the total follow count is reached, break the loop
+                            self.logger.info(f"Reached total follow count of {total_follow_count}")
                             return followed_profiles
 
+                        if followed_profiles >= follow_at_once: # if the follow at once limit is reached, break the loop
+                            self.logger.info(f"Reached follow at once limit of {follow_at_once}")
+                            return followed_profiles
+
+                        # Get the bio of the profile
                         try:
                             bio = profile.find_element(By.CSS_SELECTOR, bio_selector).text.lower()
                             self.logger.debug(f"Profile bio: {bio}")
@@ -299,7 +305,7 @@ class XController:
                             bio = ""
                             self.logger.debug("No bio found for this profile.")
 
-                        # Check if any keyword is in bio if the keywords list is not empty
+                        # Check if any keyword is in bio if the keywords list is not empty. If any keyword is in the bio, follow the profile
                         if not keywords or any(f' {keyword} ' in bio for keyword in keywords):
                             try:
                                 follow_button = profile.find_element(By.XPATH, './/button[contains(@aria-label, "Follow ")]')
@@ -312,7 +318,7 @@ class XController:
                                 follow_button.click()
                                 sleep(0.2)  # Short pause after each follow
                                 followed_profiles += 1
-                                self.logger.info(f"Followed profile. Total followed: {followed_profiles}")
+                                total_followed_profiles += 1
                     
                             except Exception as e:
                                 self.logger.exception(f"Unexpected error when trying to follow: {e}")
@@ -335,7 +341,7 @@ class XController:
                     break
                 last_height = new_height
 
-            self.logger.info(f"Auto-follow complete. Followed {followed_profiles} profiles.")
+            self.logger.info(f"auto-follow process complete. Followed {followed_profiles} profiles.")
             return followed_profiles
         except TimeoutException:
             self.logger.warning('Failed to auto follow because of timeout exception')

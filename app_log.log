@@ -1,0 +1,72 @@
+database_manager.py get_added_list() INFO: Retrieved 2 added profiles 10.02.24 14:49:30
+MainApp.py __init__() INFO: Initializing MainWindow 10.02.24 14:49:30
+MainApp.py update_delete_button_state() INFO: Bot is not running, enabling delete button 10.02.24 14:49:30
+MainApp.py load_following_profiles() INFO: Loaded following profiles into the GUI 10.02.24 14:49:30
+MainApp.py load_added_profiles() INFO: Loaded added profiles into the GUI 10.02.24 14:49:30
+MainApp.py __init__() INFO: MainWindow initialization complete 10.02.24 14:49:30
+app.bot.x_bot.py is_credentials_valid() INFO: Checking if credentials are valid 10.02.24 14:54:02
+app.bot.x_bot.py is_credentials_valid() INFO: Credentials are valid 10.02.24 14:54:02
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Assumed process duration per batch: 15 seconds. 10.02.24 14:54:02
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Raw rest_time (without process duration): 45.0 seconds. 10.02.24 14:54:02
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Adjusted rest_time (accounting for process duration): 30.0 seconds. 10.02.24 14:54:02
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Final calculated rest_time: 30.0 seconds between each batch. 10.02.24 14:54:02
+MainApp.py start_auto_follow() INFO: Starting Auto Follow process 10.02.24 14:54:02
+app.bot.auto_follow.py create_new_window() INFO: Opened and switched to a new window. 10.02.24 14:54:02
+app.bot.x_controller.py sign_in() INFO: Opened X login page 10.02.24 14:54:05
+app.bot.x_controller.py sign_in() INFO: X login page redirected to home timeline 10.02.24 14:54:05
+app.bot.x_controller.py sign_in() INFO: fakerfaker680 is already logged in to X 10.02.24 14:54:05
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Assumed process duration per batch: 15 seconds. 10.02.24 14:54:07
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Raw rest_time (without process duration): 45.0 seconds. 10.02.24 14:54:07
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Adjusted rest_time (accounting for process duration): 30.0 seconds. 10.02.24 14:54:07
+app.bot.auto_follow.py calculate_rest_time() DEBUG: Final calculated rest_time: 30.0 seconds between each batch. 10.02.24 14:54:07
+app.bot.auto_follow.py schedule_auto_follow_process() INFO: Starting new time span at 2024-10-02 14:54:07.900893 10.02.24 14:54:07
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:54:08
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:54:09
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:54:20
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 15/100 10.02.24 14:54:22
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:55:09
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:55:11
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:55:20
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 30/100 10.02.24 14:55:21
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:55:51
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:55:53
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:56:05
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 45/100 10.02.24 14:56:07
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:56:37
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:56:38
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:56:51
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 60/100 10.02.24 14:56:52
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:57:22
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:57:23
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:57:33
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 75/100 10.02.24 14:57:36
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:58:06
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:58:06
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:58:15
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 90/100 10.02.24 14:58:17
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:58:47
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:58:48
+app.bot.x_controller.py auto_follow() INFO: Reached total follow count of 100 10.02.24 14:58:55
+app.bot.auto_follow.py follow_batch() INFO: Followed 10 users. Total followed in this time span: 100/100 10.02.24 14:58:57
+app.bot.auto_follow.py schedule_auto_follow_process() INFO: Reached the total follow count of 100 for this time span. 10.02.24 14:58:57
+app.bot.auto_follow.py schedule_auto_follow_process() INFO: Starting new time span at 2024-10-02 14:59:08.024264 10.02.24 14:59:08
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:59:08
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:59:09
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 14:59:20
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 15/100 10.02.24 14:59:22
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 14:59:52
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 14:59:53
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 15:00:05
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 30/100 10.02.24 15:00:07
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 15:00:37
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 15:00:39
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 15:00:49
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 45/100 10.02.24 15:00:51
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 15:01:21
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 15:01:23
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 15:01:32
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 60/100 10.02.24 15:01:34
+app.bot.auto_follow.py follow_batch() INFO: Starting follow batch of 15 users. 10.02.24 15:02:04
+app.bot.auto_follow.py open_connect_page() INFO: Opened the connect page. 10.02.24 15:02:05
+app.bot.x_controller.py auto_follow() INFO: Reached follow at once limit of 15 10.02.24 15:02:14
+app.bot.auto_follow.py follow_batch() INFO: Followed 15 users. Total followed in this time span: 75/100 10.02.24 15:02:15

@@ -3,7 +3,6 @@ import app.bot.auto_follow as auto_follow
 from tkinter import ttk, messagebox
 import threading
 
-from app.configuration.configuration import Config
 
 class AutoFollowTab:
     def __init__(self, frame, logger, bot):
@@ -18,6 +17,7 @@ class AutoFollowTab:
         self.create_status_label()
         self.create_control_buttons()
         self.create_follow_inputs()
+        self.create_time_span_input() 
         self.create_keywords_section()
 
     def create_status_label(self):
@@ -34,7 +34,8 @@ class AutoFollowTab:
         self.start_auto_follow_button = ttk.Button(
             self.frame,
             text="Start Auto Follow",
-            command=self.start_auto_follow
+            command=self.start_auto_follow,
+            state=tk.NORMAL
         )
         self.start_auto_follow_button.pack(pady=10)
 
@@ -45,6 +46,28 @@ class AutoFollowTab:
             state=tk.DISABLED
         )
         self.stop_auto_follow_button.pack(pady=10)
+
+    def create_time_span_input(self):
+        """
+        Creates and packs the 'Time Span in Minutes' input section.
+        """
+        time_span_frame = ttk.Frame(self.frame)
+        time_span_frame.pack(pady=10)
+        
+        ttk.Label(time_span_frame, text="Time Span in Minutes:").pack(side=tk.LEFT)
+        
+        self.time_span_var = tk.StringVar()
+        self.time_span_entry = ttk.Entry(   
+            time_span_frame, 
+            textvariable=self.time_span_var, 
+            width=20,
+            validate="key",
+            validatecommand=(self.frame.register(self.validate_time_span_input), '%P')
+        )
+        self.time_span_entry.pack(side=tk.LEFT, padx=(5, 0))
+
+        self.time_span_warning = ttk.Label(time_span_frame, text="", foreground="red")
+        self.time_span_warning.pack(side=tk.LEFT, padx=(5, 0))
 
     def create_follow_inputs(self):
         """
@@ -126,7 +149,7 @@ class AutoFollowTab:
         delete_keyword_button.pack(side=tk.LEFT, padx=(5, 0))
 
     def are_settings_valid(self):
-        '''This method checks if the follow_at_once and follow_in_time_span inputs are valid'''
+        '''This method checks if the follow_at_once, follow_in_time_span, time_span inputs are valid'''
         # Check if follow_at_once is valid and not empty
         follow_at_once = self.follow_at_once_var.get().strip()
         if not follow_at_once or not self.validate_follow_at_once_input(follow_at_once):
@@ -145,6 +168,13 @@ class AutoFollowTab:
         if int(follow_at_once) > int(follow_in_time_span):
             self.logger.warning("'Follow at a time' is greater than 'Follow in 24 hours'")
             messagebox.showerror("Error", "Please enter a valid 'Follow at a time' value which is less than 'Follow in 24 hours' value.")
+            return False
+        
+        # Check if time_span is valid and not empty
+        time_span = self.time_span_var.get().strip()
+        if not time_span or not self.validate_time_span_input(time_span):
+            self.logger.warning("Invalid or empty 'Time Span in Hours' value")
+            messagebox.showerror("Error", "Please enter a valid 'Time Span in Hours' value.")
             return False
 
         return True
@@ -183,24 +213,30 @@ class AutoFollowTab:
         try:
             follow_at_once = int(self.follow_at_once_var.get())
             total_follow_count = int(self.follow_in_time_span_var.get())
+            time_span = int(self.time_span_var.get())
 
-            # Calculate required interval to distribute follows evenly over the time span
-            interval = self.auto_follow.calculate_interval(total_follow_count, follow_at_once)
+            # Set the time_span attribute of AutoFollow
+            self.auto_follow.time_span = time_span
+
+            # Calculate required rest time to distribute follows evenly over the time span
+            rest_time = self.auto_follow.calculate_rest_time(total_follow_count, follow_at_once)
 
         except ValueError as ve:
-            # Handle errors from calculate_interval such as interval being too short
-            self.logger.warning(f"Interval calculation failed: {ve}")
+            self.logger.warning(f"Rest time calculation failed: {ve}")
             messagebox.showerror("Error", f"{ve}")
             return
         except Exception as e:
-            self.logger.exception(f"Unexpected error during interval calculation: {e}")
-            messagebox.showerror("Error", "An unexpected error occurred during interval calculation.")
+            self.logger.exception(f"Unexpected error during rest time calculation: {e}")
+            messagebox.showerror("Error", "An unexpected error occurred during rest time calculation.")
             return
 
         self.logger.info("Starting Auto Follow process")
         self.auto_follow_status_label.config(text="Auto Follow is running...")
+        
+        # Update button states
         self.start_auto_follow_button.config(state=tk.DISABLED)
         self.stop_auto_follow_button.config(state=tk.NORMAL)
+        self.frame.update_idletasks()
 
         # Create a new window to run the auto follow process
         self.auto_follow.create_new_window()
@@ -241,8 +277,10 @@ class AutoFollowTab:
             self.auto_follow.stop_auto_following()
             self.auto_follow_thread.join(timeout=5)
             self.update_auto_follow_status("Auto Follow has been stopped.")
-            self.start_auto_follow_button.config(state=tk.NORMAL)
+            
+            # Update button states
             self.stop_auto_follow_button.config(state=tk.DISABLED)
+            self.start_auto_follow_button.config(state=tk.NORMAL)
         else:
             self.logger.warning("Auto Follow process is not running.")
             messagebox.showwarning("Warning", "Auto Follow process is not running.")
@@ -255,6 +293,26 @@ class AutoFollowTab:
         if "Error" in message or "stopped" in message.lower() or "completed" in message.lower():
             self.start_auto_follow_button.config(state=tk.NORMAL)
             self.stop_auto_follow_button.config(state=tk.DISABLED)
+
+    def validate_time_span_input(self, P: str):
+        """
+        Validates that the input is a non-empty string of digits greater than 0.
+
+        Args:
+            P (str): The proposed new value of the entry widget.
+
+        Returns:
+            bool: True if valid (non-empty and digits > 0), False otherwise.
+        """
+        if P.isdigit() and int(P) > 0:
+            self.time_span_warning.config(text="")
+            return True
+        elif P == "":
+            self.time_span_warning.config(text="")
+            return True
+        else:
+            self.time_span_warning.config(text="Invalid input. Enter a positive integer.")
+            return False
 
     def validate_follow_at_once_input(self, P: str):
         """
