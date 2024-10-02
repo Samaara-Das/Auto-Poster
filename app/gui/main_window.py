@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 from app.gui.settings_tab import SettingsTab
 from app.gui.bot_targets_tab import BotTargetsTab
 from app.gui.auto_follow_tab import AutoFollowTab
@@ -35,3 +36,12 @@ class MainWindow:
         AutoFollowTab(auto_follow_frame, logger, bot)
 
         self.logger.info("MainWindow initialization complete")
+
+        # After GUI setup, check if the account is locked
+        self.check_account_locked()
+
+    def check_account_locked(self):
+        '''This checks if the account is locked and shows a popup message if it is.'''
+        self.logger.info("Checking if the account is locked")
+        if self.bot.browser.is_account_locked:
+            messagebox.showerror("Account Locked", "Your X account has been locked. Please unlock your account.")

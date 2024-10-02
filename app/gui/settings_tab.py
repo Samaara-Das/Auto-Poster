@@ -112,8 +112,10 @@ class SettingsTab:
             self.logger.warning("Invalid message provided")
             messagebox.showerror("Error", "Please enter your tweet.")
             return
-
-        self.logger.info("Starting bot")
+        
+        if self.check_account_locked():
+            return
+        
         self.is_bot_running = True 
         self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
         self.bot_thread.start()
@@ -160,10 +162,12 @@ class SettingsTab:
         return True
 
     def delete_replies(self):
-        delete_interactions.delete_all_replies(self.bot.browser.driver, self.logger, self.bot.username)
+        if not self.check_account_locked():
+            delete_interactions.delete_all_replies(self.bot.browser.driver, self.logger, self.bot.username)
 
     def delete_likes(self):
-        delete_interactions.delete_all_likes(self.bot.browser.driver, self.logger, self.bot.username)
+        if not self.check_account_locked():
+            delete_interactions.delete_all_likes(self.bot.browser.driver, self.logger, self.bot.username)
 
     def fill_fields(self):
         '''
@@ -174,3 +178,15 @@ class SettingsTab:
         self.email_var.set(user_data['email'])
         self.password_var.set(user_data['password'])
         self.message_box.insert(tk.END, user_data['tweet_text'])
+
+    def check_account_locked(self):
+        '''
+        This function checks if the account is locked and shows a popup message if it is. Returns True if the account is locked, False otherwise.
+        '''
+        if self.bot.browser.is_account_locked_page_open():
+            self.logger.warning("Account is locked.")
+            messagebox.showerror("Account Locked", "Your X account has been locked. Please unlock your account.")
+            return True
+        return False
+
+    

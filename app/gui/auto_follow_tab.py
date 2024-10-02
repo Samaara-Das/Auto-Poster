@@ -203,6 +203,9 @@ class AutoFollowTab:
         """
         Handler for starting the auto follow process.
         """
+        if self.check_account_locked():
+            return
+        
         if not self.bot.is_credentials_valid(): # check if the credentials are valid just in case they have to be used to sign in to X
             messagebox.showwarning("Warning", "Credentials are not valid. Go to Settings tab to set them up.")
             return
@@ -284,6 +287,16 @@ class AutoFollowTab:
         else:
             self.logger.warning("Auto Follow process is not running.")
             messagebox.showwarning("Warning", "Auto Follow process is not running.")
+
+    def check_account_locked(self):
+        '''
+        This function checks if the account is locked and shows a popup message if it is. Returns True if the account is locked, False otherwise.
+        '''
+        if self.bot.browser.is_account_locked_page_open():
+            self.logger.warning("Account is locked.")
+            messagebox.showerror("Account Locked", "Your X account has been locked. Please unlock your account.")
+            return True
+        return False
 
     def update_auto_follow_status(self, message):
         """

@@ -1,4 +1,3 @@
-import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
@@ -29,6 +28,11 @@ class XController:
         self.db_manager = MongoManager()
         self.following = self.db_manager.get_following_list()
         self.added_people = self.db_manager.get_added_list()
+
+        # Check if the account is locked after loading the home page
+        self.is_account_locked = self.is_account_locked_page_open()
+        if self.is_account_locked:
+            self.logger.warning("Detected that the X account is locked.")
 
     def initialize_chrome_driver(self):
         '''This method initializes the Chrome driver and creates a `driver` attribute for the class'''
@@ -254,34 +258,64 @@ class XController:
             self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
             return False
 
+    def is_snackbar_displayed(self):
+        """
+        Checks if the snackbar indicating that you cannot follow more people is displayed.
+
+        Returns:
+            bool: True if the snackbar is displayed, False otherwise.
+        """
+        snackbar_selector = '//div[@data-testid="toast" and contains(.//span, "You are unable to follow more people at this time")]'
+        try:
+            snackbar = self.driver.find_element(By.XPATH, snackbar_selector)
+            is_displayed = snackbar.is_displayed()
+            return is_displayed
+        except NoSuchElementException:
+            # Snackbar not present
+            return False
+        except Exception as e:
+            self.logger.exception(f"Error checking snackbar: {e}")
+            return False
+
     @decorators.rest
     def auto_follow(self, keywords, follow_at_once, total_follow_count, total_followed):
-        '''This method automatically follows users based on the given keywords and `follow_at_once` value. It returns the number of profiles followed. '''
+        '''
+        This method automatically follows users based on the given keywords and `follow_at_once` value.
+        It returns the number of profiles followed.
+        '''
         try:
             # Make all the keywords lowercase
             keywords = [keyword.lower() for keyword in keywords]
 
             # Wait for the profiles in the connect page to load
-            WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, '//button[@data-testid="UserCell"]')))
-            
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, '//button[@data-testid="UserCell"]'))
+            )
+
             # Selector for bio
             bio_selector = 'div[class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41 r-1h8ys4a r-1jeg54m"]'
 
             # Initialize a set to keep track of profiles which have been checked
             processed_profiles = set()
 
-            # Follow people if the specified keywords are in the profile's bio and the profile 
+            # Follow people if the specified keywords are in the profile's bio and the profile
             last_height = self.driver.execute_script("return document.body.scrollHeight")
-            scroll_pause_time = 0.7  
+            scroll_pause_time = 0.7
             followed_profiles = 0
             total_followed_profiles = total_followed
+
             while True:
                 profiles = self.driver.find_elements(By.XPATH, '//button[@data-testid="UserCell"]')
                 for profile in profiles:
+                    # Check for snackbar before attempting to follow
+                    if self.is_snackbar_displayed():
+                        self.logger.info('"You are unable to follow more people" snackbar displayed on X. Stopping auto-follow process')
+                        return followed_profiles
+
                     try:
                         # Extract the profile link as a unique identifier
                         profile_link = profile.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
-                        
+
                         # Skip the profile if it's already checked
                         if profile_link in processed_profiles:
                             continue
@@ -289,11 +323,13 @@ class XController:
                         # Add the profile to processed profiles (this indicates that the profile has been checked)
                         processed_profiles.add(profile_link)
 
-                        if total_followed_profiles >= total_follow_count: # if the total follow count is reached, break the loop
+                        if total_followed_profiles >= total_follow_count:
+                            # If the total follow count is reached, break the loop
                             self.logger.info(f"Reached total follow count of {total_follow_count}")
                             return followed_profiles
 
-                        if followed_profiles >= follow_at_once: # if the follow at once limit is reached, break the loop
+                        if followed_profiles >= follow_at_once:
+                            # If the follow at once limit is reached, break the loop
                             self.logger.info(f"Reached follow at once limit of {follow_at_once}")
                             return followed_profiles
 
@@ -305,7 +341,8 @@ class XController:
                             bio = ""
                             self.logger.debug("No bio found for this profile.")
 
-                        # Check if any keyword is in bio if the keywords list is not empty. If any keyword is in the bio, follow the profile
+                        # Check if any keyword is in bio if the keywords list is not empty.
+                        # If any keyword is in the bio, follow the profile
                         if not keywords or any(f' {keyword} ' in bio for keyword in keywords):
                             try:
                                 follow_button = profile.find_element(By.XPATH, './/button[contains(@aria-label, "Follow ")]')
@@ -343,6 +380,7 @@ class XController:
 
             self.logger.info(f"auto-follow process complete. Followed {followed_profiles} profiles.")
             return followed_profiles
+
         except TimeoutException:
             self.logger.warning('Failed to auto follow because of timeout exception')
             return followed_profiles
@@ -695,11 +733,13 @@ class XController:
         except Exception as e:
             self.logger.exception(f"Error closing browser: {str(e)}")
 
-    def handle_locked_account(self):
+    def is_account_locked_page_open(self):
         """
-        Handles the case where the "Your account has been locked" page is displayed. This page can be accessed by this link: https://x.com/account/access. This method is incomplete.
+        Checks if the "Your account has been locked" page is displayed.
         """
         try:
+            self.driver.get('https://x.com/account/access')
+
             # Check if the "Your account has been locked" page is displayed
             locked_message = WebDriverWait(self.driver, 3).until(
                 EC.presence_of_element_located((By.XPATH, '//div[contains(text(), "Your account has been locked.")]'))
@@ -707,26 +747,11 @@ class XController:
             
             if locked_message:
                 self.logger.info("Account locked page detected")
-                
-                # Find and click the Verify button
-                start_button = WebDriverWait(self.driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, '//input[@type="submit"]'))
-                )
-                start_button.click()
-                self.logger.info("Clicked Verify button")
-                
-                # Wait for and click the Send email button
-                send_email_button = WebDriverWait(self.driver, 10).until(
-                    EC.element_to_be_clickable((By.XPATH, '//input[@type="submit" and @value="Send email"]'))
-                )
-                send_email_button.click()
-                self.logger.info("Clicked Send email button")
-
                 return True
             
         except TimeoutException:
             self.logger.warning("Account locked page not detected or elements not found")
+            return False
         except Exception as e:
-            self.logger.exception(f"Error handling locked account: {str(e)}")
-        
-        return False
+            self.logger.exception(f"Error checking if account is locked: {str(e)}")
+            return False

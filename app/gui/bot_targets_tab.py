@@ -220,11 +220,16 @@ class BotTargetsTab:
         self.added_people_list.insert("", "end", values=(profile_data['name'], see_tweet_status, reply_status), tags=(profile_data['link']))
 
     def get_following(self):
+        if self.check_account_locked():
+            return
         self.bot.get_following()
         self.load_following_profiles()
 
     def add_person(self):
         '''A person is added to the Added list and stored in MongoDB'''
+        if self.check_account_locked():
+            return
+        
         username = simpledialog.askstring("Add Person", "Enter the person's username:")
         if username:
             self.logger.info(f"Attempting to add person: {username} to the GUI and MongoDB database")
@@ -247,6 +252,16 @@ class BotTargetsTab:
             else:
                 self.logger.warning(f"@{username} does not exist")
                 messagebox.showerror("Error", f"@{username} does not exist.")
+
+    def check_account_locked(self):
+        '''
+        This function checks if the account is locked and shows a popup message if it is. Returns True if the account is locked, False otherwise.
+        '''
+        if self.bot.browser.is_account_locked_page_open():
+            self.logger.warning("Account is locked.")
+            messagebox.showerror("Account Locked", "Your X account has been locked. Please unlock your account.")
+            return True
+        return False
 
     def update_added_people_count(self):
         count = len(self.bot.browser.added_people)
