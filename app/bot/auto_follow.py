@@ -63,10 +63,8 @@ class AutoFollow:
             self.logger.error("Total batches calculated as 0. Check follow_at_once and total_follow_count values.")
             raise ValueError(f"Total batches calculated as 0. follow_at_once: {follow_at_once}, total_follow_count: {total_follow_count}")
         
-        # Assume each follow batch takes 1.5 * follow_at_once seconds
-        process_duration = Config.FOLLOW_DURATION * follow_at_once  
-        self.logger.debug(f"Assumed process duration per batch: {process_duration} seconds.")
-
+        process_duration = Config.SINGLE_BATCH_DURATION
+ 
         # Calculate raw rest_time without accounting for process duration
         raw_rest_time = time_span_seconds / total_batches
         self.logger.debug(f"Raw rest_time (without process duration): {raw_rest_time} seconds.")
@@ -76,15 +74,15 @@ class AutoFollow:
         self.logger.debug(f"Adjusted rest_time (accounting for process duration): {adjusted_rest_time} seconds.")
 
         # Ensure the adjusted rest_time meets the minimum requirement
-        # MIN_REST_TIME = 60  # Minimum 60 seconds between batches
-        # if adjusted_rest_time < MIN_REST_TIME:
-        #     self.logger.error(
-        #         f"Calculated rest_time {adjusted_rest_time} seconds is too short after accounting for process duration."
-        #     )
-        #     raise ValueError(
-        #         "rest_time between follow batches is too short after accounting for process duration. "
-        #         "Please reduce 'Follow at once' or increase the time span."
-        #     )
+        MIN_REST_TIME = 60  # Minimum 60 seconds between batches
+        if adjusted_rest_time < MIN_REST_TIME:
+            self.logger.error(
+                f"Calculated rest_time {adjusted_rest_time} seconds is too short after accounting for process duration."
+            )
+            raise ValueError(
+                "rest_time between follow batches is too short after accounting for process duration. "
+                "Please reduce 'Follow at once' or increase the time span."
+            )
         
         self.logger.debug(f"Final calculated rest_time: {adjusted_rest_time} seconds between each batch.")
         return adjusted_rest_time

@@ -105,7 +105,7 @@ class AutoFollowTab:
         follow_in_time_span_frame = ttk.Frame(self.frame)
         follow_in_time_span_frame.pack(pady=10)
         
-        ttk.Label(follow_in_time_span_frame, text="(Max 400) Maximum people to follow in 24 hrs:").pack(side=tk.LEFT)
+        ttk.Label(follow_in_time_span_frame, text="(Max 400 within 24 hours) Maximum people to follow in total:").pack(side=tk.LEFT)
         
         self.follow_in_time_span_var = tk.StringVar()
         self.follow_in_time_span_entry = ttk.Entry(
