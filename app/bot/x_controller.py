@@ -278,7 +278,7 @@ class XController:
             return False
 
     @decorators.rest
-    def auto_follow(self, keywords, follow_at_once, total_follow_count, total_followed):
+    def auto_follow(self, keywords, follow_at_once, total_follow_count, total_followed, get_is_running):
         '''
         This method automatically follows users based on the given keywords and `follow_at_once` value.
         It returns the number of profiles followed.
@@ -307,6 +307,10 @@ class XController:
             while True:
                 profiles = self.driver.find_elements(By.XPATH, '//button[@data-testid="UserCell"]')
                 for profile in profiles:
+                    is_running = get_is_running()
+                    if not is_running: # if the is_running attribute in AutoFollow is false, that means that the auto-follow process has stopped
+                        return followed_profiles
+                    
                     # Check for snackbar before attempting to follow
                     if self.is_snackbar_displayed():
                         self.logger.info('"You are unable to follow more people" snackbar displayed on X. Stopping auto-follow process')

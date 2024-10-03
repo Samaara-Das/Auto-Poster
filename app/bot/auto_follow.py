@@ -14,8 +14,6 @@ class AutoFollow:
         self.bot = bot
         self.logger = logger(__name__, DEBUG)
         self.window_handle = None  # To store the new window handle
-        self.scheduler = BackgroundScheduler()
-        self.scheduler_lock = threading.Lock()
         self.is_running = False
         self.follows_done = 0  # Counter for follows done in the current cycle
         self.time_span = None  # New attribute to store the time span
@@ -95,40 +93,39 @@ class AutoFollow:
         to reach a total of `total_follow_count` follows within the time span. The process continues indefinitely.
         """
         try:
-            with self.scheduler_lock:
-                if self.is_running:
-                    self.logger.warning("Auto follow process is already running.")
-                    return
+            if self.is_running:
+                self.logger.warning("Auto follow process is already running.")
+                return
 
-                self.is_running = True
+            self.is_running = True
+            self.follows_done = 0
+
+            # calculate the rest time between auto-follow batches
+            rest_time = self.calculate_rest_time(total_follow_count, follow_at_once)
+
+            # this outer loop starts a new time span (eg: 24 hours)
+            while self.is_running:
+                self.logger.info(f"Starting new time span at {datetime.now()}")
+                time_span_start_time = datetime.now()
+                time_span_end_time = time_span_start_time + timedelta(minutes=self.time_span)
+                
+                # this inner loop is responsible for executing auto-follow batches within the current time span
+                while datetime.now() <= time_span_end_time and self.is_running:
+                    self.follow_batch(follow_at_once, keywords, total_follow_count)
+                    
+                    if self.follows_done >= total_follow_count:
+                        self.logger.info(f"Reached the total follow count of {total_follow_count} for this time span.")
+                        break
+                    
+                    time.sleep(rest_time)
+                
+                # wait for the next time span to start
+                time_to_next_span = (time_span_end_time - datetime.now()).total_seconds()
+                if time_to_next_span > 0:
+                    time.sleep(time_to_next_span)
+                
+                # reset for the next time span
                 self.follows_done = 0
-
-                # calculate the rest time between auto-follow batches
-                rest_time = self.calculate_rest_time(total_follow_count, follow_at_once)
-
-                # this outer loop starts a new time span (eg: 24 hours)
-                while self.is_running:
-                    self.logger.info(f"Starting new time span at {datetime.now()}")
-                    time_span_start_time = datetime.now()
-                    time_span_end_time = time_span_start_time + timedelta(minutes=self.time_span)
-                    
-                    # this inner loop is responsible for executing auto-follow batches within the current time span
-                    while datetime.now() <= time_span_end_time:
-                        self.follow_batch(follow_at_once, keywords, total_follow_count)
-                        
-                        if self.follows_done >= total_follow_count:
-                            self.logger.info(f"Reached the total follow count of {total_follow_count} for this time span.")
-                            break
-                        
-                        time.sleep(rest_time)
-                    
-                    # wait for the next time span to start
-                    time_to_next_span = (time_span_end_time - datetime.now()).total_seconds()
-                    if time_to_next_span > 0:
-                        time.sleep(time_to_next_span)
-                    
-                    # reset for the next time span
-                    self.follows_done = 0
 
         except Exception as e:
             self.logger.exception(f"Error in auto follow process: {e}")
@@ -150,7 +147,7 @@ class AutoFollow:
             self.open_connect_page()
 
             # follow people
-            followed_profiles = self.bot.browser.auto_follow(keywords, follow_at_once, total_follow_count, self.follows_done)
+            followed_profiles = self.bot.browser.auto_follow(keywords, follow_at_once, total_follow_count, self.follows_done, lambda: self.is_running)
             self.follows_done += followed_profiles
             self.logger.info(f"Followed {followed_profiles} users. Total followed in this time span: {self.follows_done}/{total_follow_count}")
             return followed_profiles
@@ -163,25 +160,15 @@ class AutoFollow:
         """
         Resets the follows_done counter after each time span.
         """
-        with self.scheduler_lock:
-            self.follows_done = 0
-            self.logger.info("Follows done counter has been reset for the next time span.")
+        self.follows_done = 0
+        self.logger.info("Follows done counter has been reset for the next time span.")
 
     def stop_auto_following(self):
         """Stops the auto follow process."""
-        with self.scheduler_lock:
-            if not self.is_running:
-                self.logger.warning("Auto follow process is not running.")
-                return
+        if not self.is_running:
+            self.logger.warning("Auto follow process is not running.")
+            return
 
-            try:
-                self.scheduler.remove_job('auto_follow_job')
-                self.scheduler.remove_job('reset_follow_counter_job')
-                self.logger.info("Scheduled jobs removed.")
-            except Exception as e:
-                self.logger.warning(f"Error removing scheduled jobs: {e}")
-
-            self.scheduler.shutdown(wait=False)
-            self.is_running = False
-            self.follows_done = 0  # Reset counter when stopping
-            self.logger.info("Auto follow process stopped.")
+        self.is_running = False
+        self.follows_done = 0  # Reset counter when stopping
+        self.logger.info("Auto follow process stopped.")
