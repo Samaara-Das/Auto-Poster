@@ -203,14 +203,14 @@ class AutoFollowTab:
         """
         Handler for starting the auto follow process.
         """
-        if self.check_account_locked():
-            return
-        
         if not self.bot.is_credentials_valid(): # check if the credentials are valid just in case they have to be used to sign in to X
             messagebox.showwarning("Warning", "Credentials are not valid. Go to Settings tab to set them up.")
             return
         
         if not self.are_settings_valid():
+            return
+        
+        if self.check_account_locked():
             return
 
         try:
@@ -241,8 +241,6 @@ class AutoFollowTab:
         self.stop_auto_follow_button.config(state=tk.NORMAL)
         self.frame.update_idletasks()
 
-        # Create a new window to run the auto follow process
-        self.auto_follow.create_new_window()
         self.auto_follow.sign_in()
 
         # Start the auto follow process in a separate thread

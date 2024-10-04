@@ -9,7 +9,6 @@ class SettingsTab:
         self.frame = frame
         self.logger = logger
         self.bot = bot
-        self.is_bot_running = False
 
         self.username_var = tk.StringVar()
         self.email_var = tk.StringVar()
@@ -116,7 +115,7 @@ class SettingsTab:
         if self.check_account_locked():
             return
         
-        self.is_bot_running = True 
+        self.bot.stop_event.clear()
         self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
         self.bot_thread.start()
         self.toggle_start_stop_buttons()
@@ -131,13 +130,11 @@ class SettingsTab:
         except Exception as e:
             self.logger.exception(f"An error occurred while running the bot: {str(e)}")
         finally:
-            self.is_bot_running = False
             self.toggle_start_stop_buttons()
             self.logger.info("Bot finished running")
 
     def stop_bot(self):
         self.bot.stop_bot()
-        self.is_bot_running = False
         self.toggle_start_stop_buttons()
 
     def toggle_start_stop_buttons(self):
@@ -147,6 +144,7 @@ class SettingsTab:
         else:
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
+            self.logger.info("Bot finished running")
 
     def is_message_valid(self):
         '''
@@ -189,4 +187,3 @@ class SettingsTab:
             return True
         return False
 
-    

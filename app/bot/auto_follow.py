@@ -2,12 +2,7 @@ from datetime import datetime, timedelta
 from app.logger.logger import logger, DEBUG
 from selenium.webdriver.common.window import WindowTypes
 from app.configuration.configuration import Config
-
-from apscheduler.schedulers.background import BackgroundScheduler
-import threading
 import time
-
-sec_multiplier = 60
 
 class AutoFollow:
     def __init__(self, bot):
@@ -17,17 +12,6 @@ class AutoFollow:
         self.is_running = False
         self.follows_done = 0  # Counter for follows done in the current cycle
         self.time_span = None  # New attribute to store the time span
-
-    def create_new_window(self):
-        """Creates a new window to run the auto follow process"""
-        try:
-            driver = self.bot.browser.driver
-            new_window = driver.switch_to.new_window(WindowTypes.WINDOW)
-            self.window_handle = new_window
-            self.logger.info("Opened and switched to a new window.")
-
-        except Exception as e:
-            self.logger.exception(f"Failed to create a new window: {e}")
 
     def sign_in(self):
         """Signs in to X if user is logged out."""
@@ -55,7 +39,7 @@ class AutoFollow:
         Note:
             If the calculation results in a rest time that is too short to account for the batch duration, it logs an error and raises a ValueError.
         """
-        time_span_seconds = self.time_span * sec_multiplier  # Convert minutes to seconds
+        time_span_seconds = self.time_span * 60  # Convert minutes to seconds
         total_batches = total_follow_count / follow_at_once
         if total_batches == 0:
             self.logger.error("Total batches calculated as 0. Check follow_at_once and total_follow_count values.")

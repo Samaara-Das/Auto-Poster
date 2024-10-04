@@ -28,6 +28,7 @@ class XController:
         self.db_manager = MongoManager()
         self.following = self.db_manager.get_following_list()
         self.added_people = self.db_manager.get_added_list()
+        self.stop_get_following = False
 
         # Check if the account is locked after loading the home page
         self.is_account_locked = self.is_account_locked_page_open()
@@ -198,32 +199,54 @@ class XController:
             self.logger.exception(f'Failed to navigate to the following page of {username}. Error: {str(e)}')
             return False
 
+    def set_stop_get_following(self, stop_event):
+        '''This method sets the boolean value of `self.stop_get_following` to `stop_event`'''
+        self.stop_get_following = stop_event
+
     def get_following(self):
         """
-        Goes through the following page and scrapes the data of the profiles that the user is following. The data of a profile is stored in MongoDB if it's not already in the database.
+        Goes through the following page and scrapes the data of the profiles that the user is following.
+        Stores the data in MongoDB if it's not already present.
         """
-        try:
-            # Find the timeline element
-            timeline_div = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]')))
+        def check_stop_event():
+            if self.stop_get_following:
+                self.logger.info("Stop event detected. Setting stop_get_following to False")
+                self.set_stop_get_following(False)
+                return True
+            return False
 
-            # Find all the profile links
+        try:
+            timeline_div = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]'))
+            )
+
             last_height = self.driver.execute_script("return document.body.scrollHeight")
-            scroll_pause_time = 0.7  
+            scroll_pause_time = 0.7
             latest_following = []
+
             while True:
-                # Scroll down gradually
+                if check_stop_event():
+                    self.logger.info("Aborting get_following.")
+                    return True
+
                 self.logger.info('Scrolling down to load more profiles')
                 self.driver.execute_script("window.scrollBy(0, 600);")
                 sleep(scroll_pause_time)
 
-                # Scrape data of all profiles that the user is following
                 profile_elements = timeline_div.find_elements(By.XPATH, './/div[@class="css-175oi2r r-1adg3ll r-1ny4l3l"]')
-                
                 self.logger.info(f'Scraping data from {len(profile_elements)} profiles')
+
                 for element in profile_elements:
-                    link = element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
-                    if link not in latest_following:
-                        latest_following.append(link)
+                    if check_stop_event():
+                        self.logger.info("Aborting get_following.")
+                        return True
+                    try:
+                        link = element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
+                        if link not in latest_following:
+                            latest_following.append(link)
+                    except NoSuchElementException:
+                        self.logger.warning("Profile link not found. Skipping.")
+                        continue
 
                 # Calculate new scroll height and compare with last scroll height
                 new_height = self.driver.execute_script("return document.body.scrollHeight")
@@ -240,8 +263,12 @@ class XController:
 
             self.logger.info(f"Scraped {len(latest_following)} profiles")
             
-            # store a profile that the user is following if it's not already in MongoDB
             for profile_link in latest_following:
+                if check_stop_event():
+                    self.logger.info("Aborting get_following.")
+                    return True
+
+                # store a profile that the user is following if it's not already in MongoDB
                 if not self.db_manager.is_profile_in_following(profile_link): 
                     data = self.scrape_profile_data(profile_link)
                     self.following.append(data)
@@ -759,3 +786,5 @@ class XController:
         except Exception as e:
             self.logger.exception(f"Error checking if account is locked: {str(e)}")
             return False
+
+

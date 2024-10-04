@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
+import threading
 
 class BotTargetsTab:
     def __init__(self, frame, logger, bot):
@@ -220,18 +221,49 @@ class BotTargetsTab:
         self.added_people_list.insert("", "end", values=(profile_data['name'], see_tweet_status, reply_status), tags=(profile_data['link']))
 
     def get_following(self):
-        if self.check_account_locked():
-            return
-        self.bot.get_following()
-        self.load_following_profiles()
-
-    def add_person(self):
-        '''A person is added to the Added list and stored in MongoDB'''
-        if self.check_account_locked():
+        """
+        Initiates the process of fetching following profiles in a separate thread to keep the GUI responsive.
+        """
+        if not self.bot.is_credentials_valid():
+            self.logger.warning(f"Invalid credentials provided. username: {self.bot.username}, password: {self.bot.password}, email: {self.bot.email}")
+            messagebox.showerror("Error", "Please enter your X username, password and email in the Settings tab.")
             return
         
+        if self.check_account_locked():
+            return
+
+        # Start the get_following process in a separate thread
+        threading.Thread(target=self._get_following_thread, daemon=True).start()
+
+    def _get_following_thread(self):
+        """
+        The actual method that runs in a separate thread to fetch following profiles.
+        """
+        try:
+            self.bot.get_following()
+            # Schedule the GUI update on the main thread
+            self.frame.after(0, self.load_following_profiles)
+        except Exception as e:
+            self.logger.exception(f"An error occurred while getting following profiles: {e}")
+            self.frame.after(0, lambda: messagebox.showerror("Error", f"An error occurred: {e}"))
+
+    def add_person(self):
+        """
+        Initiates the process of adding a person in a separate thread to keep the GUI responsive.
+        """
+        if self.check_account_locked():
+            return
+
         username = simpledialog.askstring("Add Person", "Enter the person's username:")
         if username:
+            # Start the add_person process in a separate thread
+            threading.Thread(target=self._add_person_thread, args=(username,), daemon=True).start()
+
+    def _add_person_thread(self, username):
+        """
+        The actual method that runs in a separate thread to add a person.
+        """
+        try:
             self.logger.info(f"Attempting to add person: {username} to the GUI and MongoDB database")
             name = self.bot.browser.check_user_exists(username)
             if name:
@@ -239,19 +271,23 @@ class BotTargetsTab:
                 # Scrape profile data
                 profile_data = self.bot.browser.scrape_profile_data(profile_link)
                 if profile_data:
-                    # update in MongoDB, code and GUI
+                    # Update in MongoDB, code and GUI
                     self.bot.browser.db_manager.save_added_profile(profile_data)
                     self.bot.browser.added_people.append(profile_data)
-                    self.update_added_people_count()
-                    self.insert_added_people_list(profile_data)
+                    # Schedule GUI updates on the main thread
+                    self.frame.after(0, self.update_added_people_count)
+                    self.frame.after(0, lambda: self.insert_added_people_list(profile_data))
                     self.logger.info(f"Successfully added @{username} to the GUI and MongoDB database")
-                    messagebox.showinfo("Success", f"@{username} added successfully.")
+                    self.frame.after(0, lambda: messagebox.showinfo("Success", f"@{username} added successfully."))
                 else:
                     self.logger.warning(f"Failed to scrape profile data for @{username}")
-                    messagebox.showerror("Error", f"Failed to scrape profile data for @{username}.")
+                    self.frame.after(0, lambda: messagebox.showerror("Error", f"Failed to scrape profile data for @{username}."))
             else:
                 self.logger.warning(f"@{username} does not exist")
-                messagebox.showerror("Error", f"@{username} does not exist.")
+                self.frame.after(0, lambda: messagebox.showerror("Error", f"@{username} does not exist."))
+        except Exception as e:
+            self.logger.exception(f"An error occurred while adding person @{username}: {e}")
+            self.frame.after(0, lambda: messagebox.showerror("Error", f"An error occurred: {e}"))
 
     def check_account_locked(self):
         '''
