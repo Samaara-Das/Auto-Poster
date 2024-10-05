@@ -29,6 +29,7 @@ class XController:
         self.following = self.db_manager.get_following_list()
         self.added_people = self.db_manager.get_added_list()
         self.stop_get_following = False
+        self.stop_add_process = False
 
         # Check if the account is locked after loading the home page
         self.is_account_locked = self.is_account_locked_page_open()
@@ -58,12 +59,26 @@ class XController:
         
     def check_user_exists(self, username):
         '''This method checks if the specified user exists on X. If the user exists, it returns the account name, otherwise it returns False.'''
+        def check_stop_event():
+            '''This checks if `self.stop_add_process` is True. If it is, `self.set_stop_add_process(False)` is called and True is returned. Otherwise, False is returned. It is intended to detect if the Add button in the Bot Targets tab was clicked.'''
+            if self.stop_add_process:
+                self.logger.info("Stop event detected. Setting stop_add_process to False")
+                self.set_stop_add_process(False)
+                return True
+            return False
+        
         try:
             # Navigate to the user's profile
             self.driver.get(f"https://x.com/{username}")
             
+            if check_stop_event():
+                return False
+
             # Wait for the page to load
             account_name = WebDriverWait(self.driver, 7).until(EC.presence_of_element_located((By.XPATH, '//div[@data-testid="UserName"]//span[@class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3"]')))
+
+            if check_stop_event():
+                return False
 
             # Check if the user exists by checking if "@" is in the tab title
             user_exists = f"@" in self.driver.title
@@ -173,6 +188,10 @@ class XController:
         except Exception as e:
             self.logger.exception(f'Failed to log in to X. Error: {str(e)}')
             raise  # Re-raise the exception to be caught by the calling method
+
+    def set_stop_add_process(self, stop_event):
+        '''This method sets the boolean value of `self.stop_add_process` to `stop_event`'''
+        self.stop_add_process = stop_event
 
     def update_added_people(self):
         '''This method fetches the latest data from the 'added' collection in MongoDB and updates `self.added_people`'''
@@ -424,12 +443,23 @@ class XController:
         """
         Scrapes and returns data of an X profile.
         """
+        def check_stop_event():
+            '''This checks if `self.stop_add_process` is True. If it is, `self.set_stop_add_process(False)` is called and True is returned. Otherwise, False is returned. It is intended to detect if the Add button in the Bot Targets tab was clicked.'''
+            if self.stop_add_process:
+                self.logger.info("Stop event detected. Setting stop_add_process to False")
+                self.set_stop_add_process(False)
+                return True
+            return False
+        
         try:
             # Open the profile in a new tab
             self.driver.execute_script("window.open('');")
             self.driver.switch_to.window(self.driver.window_handles[-1])
             self.driver.get(link)
             self.logger.info(f'Opened {link} in new tab')
+
+            if check_stop_event():
+                return None
 
             self.reload_page()
 
@@ -447,6 +477,9 @@ class XController:
             name = name_element.text.split('@')[0].strip()
             following_count = profile.find_element(By.XPATH, './/a[contains(@href, "/following")]/span/span').text
             followers_count = profile.find_element(By.XPATH, './/a[contains(@href, "followers")]/span/span').text
+
+            if check_stop_event():
+                return None
 
             # Optional fields
             bio = self._get_optional_field(profile, '//div[@data-testid="UserDescription"]')
@@ -467,6 +500,9 @@ class XController:
 
             # Click the View More button if it exists
             try:
+                if check_stop_event():
+                    return None
+                
                 more_info = ''
                 view_more_button = self.driver.find_element(By.XPATH, '//div[@class="css-175oi2r r-3pj75a r-ttdzmv r-1ifxtd0"] //a[contains(@href, "bio")]')
                 view_more_button.click()
@@ -523,8 +559,18 @@ class XController:
         """
         Fetches the list of followers you follow.
         """
+        def check_stop_event():
+            '''This checks if `self.stop_add_process` is True. If it is, True is returned. Otherwise, False is returned. It is intended to detect if the Add button in the Bot Targets tab was clicked.'''
+            if self.stop_add_process:
+                self.logger.info("Stop event detected.")
+                return True
+            return False
+        
         try:
             # Navigate to the 'Followers you know' page
+            if check_stop_event():
+                return []
+            
             common_followers_link = self.driver.find_element(By.XPATH, '//a[@aria-label="Followers you know"]').get_attribute('href')
             self.driver.get(common_followers_link)
             followers_section = WebDriverWait(self.driver, 3).until(
@@ -536,6 +582,9 @@ class XController:
             last_height = self.driver.execute_script("return document.body.scrollHeight")
             scroll_pause_time = 0.7
             while True:
+                if check_stop_event():
+                    return []
+                
                 self.logger.info('Scrolling down to load more profiles')
                 self.driver.execute_script("window.scrollBy(0, 500);")
                 sleep(scroll_pause_time)

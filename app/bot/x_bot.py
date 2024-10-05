@@ -17,7 +17,6 @@ class XBot:
         self.content = ''
         self.is_running = False
         self.logger = logger(__name__)
-        self.stop_event = threading.Event()  # Initialize the stop event
 
     def is_credentials_valid(self):
         '''This method checks if the email, username and password are valid'''
@@ -155,4 +154,7 @@ class XBot:
         self.browser.set_stop_get_following(True)
         self.logger.info("Bot finished running.")
 
-
+    def stop_get_following(self):
+        self.logger.info("Stopping get following")
+        self.browser.set_stop_get_following(True)
+        self.logger.info("Get following processfinished running.")
