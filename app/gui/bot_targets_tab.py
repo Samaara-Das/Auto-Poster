@@ -3,10 +3,11 @@ from tkinter import ttk, messagebox, simpledialog
 import threading
 
 class BotTargetsTab:
-    def __init__(self, frame, logger, bot):
+    def __init__(self, frame, logger, bot, process_manager):
         self.frame = frame
         self.logger = logger
         self.bot = bot
+        self.process_manager = process_manager  # Reference to ProcessManager
         self.get_following_thread = None  # Reference to the get_following thread
         self.add_person_thread = None      # Reference to the add_person thread
 
@@ -115,15 +116,24 @@ class BotTargetsTab:
 
     def get_following(self):
         """
-        Initiates the process of fetching following profiles in a separate thread to keep the GUI responsive.
+        Initiates the process of fetching following profiles in a separate thread to keep the GUI 
+        responsive.
         Disables the Get Following button and enables the Stop Get Following button.
         """
+        process_name = "Get Following"
+        success, message = self.process_manager.request_start(process_name)
+        if not success:
+            messagebox.showwarning("Process Ongoing", message)
+            return
+
         if not self.bot.is_credentials_valid():
             self.logger.warning(f"Invalid credentials provided. username: {self.bot.username}, password: {self.bot.password}, email: {self.bot.email}")
             messagebox.showerror("Error", "Please enter your X username, password and email in the Settings tab.")
+            self.process_manager.clear_process()
             return
         
         if self.check_account_locked():
+            self.process_manager.clear_process()
             return
 
         # Disable Get Following button and enable Stop Get Following button
@@ -158,26 +168,21 @@ class BotTargetsTab:
         """
         self.get_following_button.config(state=tk.NORMAL)
         self.stop_get_following_button.config(state=tk.DISABLED)
-
-    def stop_get_following(self):
-        """
-        Stops the Get Following process.
-        Sets the stop flag in the bot and updates button states.
-        """
-        self.bot.stop_get_following()
-
-        # Disable Stop Get Following button and enable Get Following button
-        self.stop_get_following_button.config(state=tk.DISABLED)
-        self.get_following_button.config(state=tk.NORMAL)
-
-        self.logger.info("Get Following process has been requested to stop.")
+        self.process_manager.clear_process()
 
     def add_person(self):
         """
         Initiates the process of adding a person in a separate thread to keep the GUI responsive.
         Disables the Add button and enables the Stop Add Process button.
         """
+        process_name = "Add Person"
+        success, message = self.process_manager.request_start(process_name)
+        if not success:
+            messagebox.showwarning("Process Ongoing", message)
+            return
+
         if self.check_account_locked():
+            self.process_manager.clear_process()
             return
 
         # Prompt user for the username to add
@@ -230,6 +235,7 @@ class BotTargetsTab:
         Resets the state of the Add and Stop Add Process buttons.
         This method should be called from the main thread.
         """
+        self.process_manager.clear_process()
         self.add_button.config(state=tk.NORMAL)
         self.stop_add_process_button.config(state=tk.DISABLED)
 
@@ -244,6 +250,7 @@ class BotTargetsTab:
         self.stop_add_process_button.config(state=tk.DISABLED)
         self.add_button.config(state=tk.NORMAL)
 
+        self.process_manager.clear_process()
         self.logger.info("Add process has been requested to stop.")
 
     def toggle_following_radio_button(self, event):
@@ -402,11 +409,29 @@ class BotTargetsTab:
         self.added_people_label.config(text=f"Added People: {count}")
 
     def stop_get_following(self):
-        self.bot.stop_get_following()
+        """
+        Stops the Get Following process.
+        Sets the stop flag in the bot and updates button states.
+        """
+        self.bot.browser.set_stop_get_following(True)
+        self.logger.info("Get Following process has been requested to stop.")
+
+        # Disable Stop Get Following button and enable Get Following button
+        self.stop_get_following_button.config(state=tk.DISABLED)
+        self.get_following_button.config(state=tk.NORMAL)
+
+        self.process_manager.clear_process()
 
     def stop_add_process(self):
         """
-        Stops the add process in the bot controller.
+        Stops the Add process.
+        Sets the stop flag in the bot and updates button states.
         """
         self.bot.browser.set_stop_add_process(True)
         self.logger.info("Add process has been requested to stop.")
+
+        # Disable Stop Add Process button and enable Add button
+        self.stop_add_process_button.config(state=tk.DISABLED)
+        self.add_button.config(state=tk.NORMAL)
+
+        self.process_manager.clear_process()

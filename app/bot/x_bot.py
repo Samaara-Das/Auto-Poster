@@ -15,7 +15,7 @@ class XBot:
         self.password = ''
         self.email = ''
         self.content = ''
-        self.is_running = False
+        self.is_running = True
         self.logger = logger(__name__)
 
     def is_credentials_valid(self):
@@ -47,6 +47,11 @@ class XBot:
             self.browser.go_to_following(self.username)
             self.browser.get_following()
 
+    def unfollow_users(self, count):
+        '''This method unfollows a specified number of users that the bot is currently following.'''
+        self.browser.go_to_following(self.username)
+        self.browser.unfollow_users(count)
+
     def interact_with_tweet(self, profile):
         '''This method opens the profile page of the person passed in, scrolls to the latest tweet, likes the tweet, and replies to it if it's allowed. The tweet is then saved to the database.'''
         self.browser.reload_page(mins_to_wait=2)
@@ -67,6 +72,10 @@ class XBot:
 
         self.browser.db_manager.save_tweet(tweet_link, tweet_author)
         self.logger.info(f"Saved tweet link: {tweet_link} by author: {tweet_author}")
+
+    def get_total_following(self):
+        '''This method retrieves the total number of people that the user is following on X. This is not the same as getting the number of people in the database because the number of people in the database can be different than the actual number of people the user is following on X.'''
+        return self.browser.get_following_number(self.username)
 
     @decorators.rest
     def open_profile(self, profile):
@@ -113,7 +122,6 @@ class XBot:
             return
         self.get_following()
 
-        self.is_running = True
         self.logger.info("Starting main loop")
         profiles = self.browser.added_people + self.browser.following
         while self.is_running:

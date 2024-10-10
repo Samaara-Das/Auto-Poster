@@ -197,9 +197,33 @@ class XController:
         '''This method fetches the latest data from the 'added' collection in MongoDB and updates `self.added_people`'''
         self.added_people = self.db_manager.get_added_list()
 
-    def update_following(self):
-        '''This method fetches the latest data from the 'following' collection in MongoDB and updates `self.following`'''
-        self.following = self.db_manager.get_following_list()
+    def get_following_number(self, username: str):
+        '''This method finds the number of people that the user is following on X'''
+        try:
+            self.open_page(f'https://x.com/{username}')
+            sleep(2) # keep this sleep for the latest and correct following number to load
+            following_element = WebDriverWait(self.driver, 5).until(EC.presence_of_element_located((By.XPATH, f'//div[@aria-label="Home timeline"]//a[@href="/{username}/following"]//span')))
+            following_text = following_element.text.replace(',', '')
+            
+            # Handle the case where the number contains K. Eg: 32.1K or 12K
+            if 'K' in following_text:
+                following_text = following_text.replace('K', '')
+                if '.' in following_text:
+                    following_number = int(following_text) * 100
+                else:
+                    following_number = int(following_text) * 1000
+            else:
+                following_number = int(following_text)
+            
+            return following_number
+            
+        except Exception as e:
+            self.logger.exception(f'Failed to get the number of people that the user is following on X. Error: {str(e)}')
+            return 0
+
+    def remove_person_from_db(self, link: str):
+        '''This method removes a profile with `link` from the 'following' collection in MongoDB'''
+        self.db_manager.delete_following_profile(link)
 
     def remove_added_person(self, link: str):
         '''This method removes a profile with `link` from `self.added_people`'''
@@ -302,6 +326,71 @@ class XController:
             return False
         except Exception as e:
             self.logger.exception(f'Failed to scrape profile links. Error: {str(e)}')
+            return False
+
+    def unfollow_users(self, count):
+        """
+        Unfollows `count` users that the user is currently following. Removes people from the mongodb collection as they get unfollowed.
+        """
+        try:
+            self.logger.info(f"Starting to unfollow {count} users.")
+            timeline_div = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Timeline: Following"]'))
+            )
+
+            last_height = self.driver.execute_script("return document.body.scrollHeight")
+            scroll_pause_time = 0.7
+            unfollowed_profiles = []
+
+            while True:
+                profile_elements = timeline_div.find_elements(By.XPATH, './/div[@class="css-175oi2r r-1adg3ll r-1ny4l3l"]')
+              
+                for element in profile_elements:
+                    if len(unfollowed_profiles) >= count: # if the desired number of profiles have been unfollowed, exit the method
+                        self.logger.info(f"Finished unfollowing {count} users.")
+                        return True
+                    try:
+                        link = element.find_element(By.XPATH, './/a[@role="link"]').get_attribute('href')
+                        if link not in unfollowed_profiles:
+                            # Click the Following button to trigger the Unfollow popup
+                            button = element.find_element(By.XPATH, './/button[contains(@aria-label, "Following ")]')
+                            if not button.is_displayed():
+                                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+                                sleep(0.5)  # Wait for scroll to complete
+                            button.click()
+                            unfollow_button = WebDriverWait(self.driver, 2).until(
+                                EC.presence_of_element_located((By.XPATH, '//div[@data-testid="confirmationSheetDialog"]//button[@data-testid="confirmationSheetConfirm"]'))
+                            )
+                            unfollow_button.click()
+                            sleep(0.2)
+                            unfollowed_profiles.append(link)
+                            self.remove_person_from_db(link)
+                    except WebDriverException as e:
+                        self.logger.warning(f"WebDriverException occurred while clicking the unfollow button: {e}")
+                        continue
+
+                # Calculate new scroll height and compare with last scroll height
+                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    # Try scrolling a bit more to ensure we've reached the bottom
+                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    sleep(scroll_pause_time)
+                    new_height = self.driver.execute_script("return document.body.scrollHeight")
+                    if new_height == last_height:
+                        # If heights are still the same, we've reached the end of the page
+                        self.logger.info('Reached the end of the page')
+                        break
+                last_height = new_height
+
+                self.logger.info('Scrolling down to load more profiles')
+                self.driver.execute_script("window.scrollBy(0, 600);")
+                sleep(scroll_pause_time)
+
+        except TimeoutException:
+            self.logger.warning("The page might not have loaded properly.")
+            return False
+        except Exception as e:
+            self.logger.exception(f'Failed to unfollow users. Error: {str(e)}')
             return False
 
     def is_snackbar_displayed(self):

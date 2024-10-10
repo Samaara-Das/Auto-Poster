@@ -5,10 +5,11 @@ import threading
 
 
 class AutoFollowTab:
-    def __init__(self, frame, logger, bot):
+    def __init__(self, frame, logger, bot, process_manager):
         self.frame = frame
         self.logger = logger
         self.bot = bot
+        self.process_manager = process_manager  # Reference to ProcessManager
         self.auto_follow = auto_follow.AutoFollow(bot)
 
         self.create_widgets()
@@ -203,14 +204,23 @@ class AutoFollowTab:
         """
         Handler for starting the auto follow process.
         """
-        if not self.bot.is_credentials_valid(): # check if the credentials are valid just in case they have to be used to sign in to X
+        process_name = "Start Auto Follow"
+        success, message = self.process_manager.request_start(process_name)
+        if not success:
+            messagebox.showwarning("Process Ongoing", message)
+            return
+
+        if not self.bot.is_credentials_valid():
             messagebox.showwarning("Warning", "Credentials are not valid. Go to Settings tab to set them up.")
+            self.process_manager.clear_process()
             return
         
         if not self.are_settings_valid():
+            self.process_manager.clear_process()
             return
         
         if self.check_account_locked():
+            self.process_manager.clear_process()
             return
 
         try:
@@ -227,10 +237,12 @@ class AutoFollowTab:
         except ValueError as ve:
             self.logger.warning(f"Rest time calculation failed: {ve}")
             messagebox.showerror("Error", f"{ve}")
+            self.process_manager.clear_process()
             return
         except Exception as e:
             self.logger.exception(f"Unexpected error during rest time calculation: {e}")
             messagebox.showerror("Error", "An unexpected error occurred during rest time calculation.")
+            self.process_manager.clear_process()
             return
 
         self.logger.info("Starting Auto Follow process")
@@ -268,6 +280,8 @@ class AutoFollowTab:
         except Exception as e:
             self.logger.exception(f"An error occurred during Auto Follow: {e}")
             self.update_auto_follow_status(f"Error: {e}")
+        finally:
+            self.process_manager.clear_process()
 
     def stop_auto_follow(self):
         """
@@ -282,6 +296,8 @@ class AutoFollowTab:
             # Update button states
             self.stop_auto_follow_button.config(state=tk.DISABLED)
             self.start_auto_follow_button.config(state=tk.NORMAL)
+
+            self.process_manager.clear_process()
         else:
             self.logger.warning("Auto Follow process is not running.")
             messagebox.showwarning("Warning", "Auto Follow process is not running.")
@@ -304,6 +320,7 @@ class AutoFollowTab:
         if "Error" in message or "stopped" in message.lower() or "completed" in message.lower():
             self.start_auto_follow_button.config(state=tk.NORMAL)
             self.stop_auto_follow_button.config(state=tk.DISABLED)
+            self.process_manager.clear_process()
 
     def validate_time_span_input(self, P: str):
         """
